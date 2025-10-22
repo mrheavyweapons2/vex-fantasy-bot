@@ -63,26 +63,48 @@ async def on_ready():
         print(f"Error syncing commands: {e}")
 
 
+
+
+
 """
 MISC COMMANDS
-    -test command (says hello to the user prompting the command)
+    -bear (test command that sends a bear gif to make sure the bots working)
 """
 
 #test command
-@bot.tree.command(name="hello", description="Say hello to the bot!")
-async def hello(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Hello, {interaction.user.display_name}!")
+@bot.tree.command(name="bear", description="sends a bear gif")
+async def bear(interaction: discord.Interaction):
+    await interaction.response.send_message("https://tenor.com/view/bear-scream-gif-7281540763674856279")
 
 """
 ADMIN COMMANDS
     -create_draft (creates the draft, and its dedicated directory)
+    -announce_draft (announces the draft and opens it for people to enter)
+    -start_draft (starts the draft for everyone to start picking)
 """
 
 #command that creates the draft
 @bot.tree.command(name="create_draft", description="Creates the Draft")
-async def create_draft(interaction: discord.Interaction):
+async def create_draft(interaction: discord.Interaction,
+    draft_limit: int = None
+    ):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
+#command to announce the draft
+@bot.tree.command(name="announce_draft", description="Announces the Draft and opens it for people to enter")
+async def announce_draft(interaction: discord.Interaction,
+    channel: str,
+    emoji_react: str
+    ):
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+
+#command to announce the draft
+@bot.tree.command(name="start_draft", description="Starts the Draft")
+async def start_draft(interaction: discord.Interaction,
+    channel: str,
+    min_time_limit: int
+    ):
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 """
 USER COMMANDS
     -pick (reserves a single pick for the next turn)
@@ -93,7 +115,7 @@ USER COMMANDS
 #command that lets the user pick one bot
     #1 mandatory parameter for team pick
 @bot.tree.command(name="pick", description="Reserve a Single Pick for your next turn")
-async def pick(interaction: discord.Interaction):
+async def pick(interaction: discord.Interaction, team: str):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
@@ -101,12 +123,22 @@ async def pick(interaction: discord.Interaction):
     #1 mandatory parameter for team pick
     #3 optional team pick parameters
 @bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams for the bot to automaticly pick for you")
-async def create_draft(interaction: discord.Interaction):
+async def reserve_picks(interaction: discord.Interaction,
+    team1: str,
+    team2: str = None,
+    team3: str = None,
+    team4: str = None
+    ):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user clear their list of picks
-@bot.tree.command(name="clear_pick", description="Clears any picks that you currently have.")
-async def create_draft(interaction: discord.Interaction):
+@bot.tree.command(name="clear_picks", description="Clears any picks that you currently have.")
+async def clear_picks(interaction: discord.Interaction):
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+
+#command that lets the user clear their list of picks
+@bot.tree.command(name="draft_status", description="Tells the user the current draft status.")
+async def draft_status(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #runs the bot on the token
