@@ -30,6 +30,9 @@ MS 5: QUALITY OF LIFE CHANGES
     -automated draft results will be placed in a cleaner excel file to look better
 """
 
+#import draft
+from manager import draft
+
 #imports discord token from an encrypted .env file
 import os
 from dotenv import load_dotenv
@@ -63,9 +66,6 @@ async def on_ready():
         print(f"Error syncing commands: {e}")
 
 
-
-
-
 """
 MISC COMMANDS
     -bear (test command that sends a bear gif to make sure the bots working)
@@ -86,14 +86,19 @@ ADMIN COMMANDS
 #command that creates the draft
 @bot.tree.command(name="create_draft", description="Creates the Draft")
 async def create_draft(interaction: discord.Interaction,
+    draft_name: str,
     draft_limit: int = None
     ):
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    #creates the draft object
+    newdraft = draft.Draft(draft_name)
+    #sends the draft creator the draft information
+    await interaction.response.send_message(
+        f'Draft "{draft_name}" created with {f"a limit of {draft_limit} people" if draft_limit else 'no limit'}')
 
 #command to announce the draft
 @bot.tree.command(name="announce_draft", description="Announces the Draft and opens it for people to enter")
 async def announce_draft(interaction: discord.Interaction,
-    channel: str,
+    channel: discord.TextChannel,
     emoji_react: str
     ):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
@@ -110,6 +115,7 @@ USER COMMANDS
     -pick (reserves a single pick for the next turn)
     -reserve_picks (reserves multiple picks so the bot can automatically pick from it)
     -clear_pick (clears the picks from the user)
+    -draft_status (checks the status of the current draft)
 """
 
 #command that lets the user pick one bot
@@ -124,6 +130,7 @@ async def pick(interaction: discord.Interaction, team: str):
     #3 optional team pick parameters
 @bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams for the bot to automaticly pick for you")
 async def reserve_picks(interaction: discord.Interaction,
+    doublepick: bool,
     team1: str,
     team2: str = None,
     team3: str = None,
