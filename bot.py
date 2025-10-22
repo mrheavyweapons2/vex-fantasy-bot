@@ -70,13 +70,13 @@ async def hello(interaction: discord.Interaction):
 #command that creates the draft
 @bot.tree.command(name="create_draft", description="Creates the Draft")
 async def create_draft(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented")
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user pick one bot
     #1 mandatory parameter for team pick
 @bot.tree.command(name="pick", description="Reserve a Single Pick for your next turn")
 async def pick(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented")
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
     #1 mandatory parameter for double picking teams
@@ -84,12 +84,12 @@ async def pick(interaction: discord.Interaction):
     #3 optional team pick parameters
 @bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams for the bot to automaticly pick for you")
 async def create_draft(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented")
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user clear their list of picks
 @bot.tree.command(name="clear_pick", description="Clears any picks that you currently have.")
 async def create_draft(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented")
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #runs the bot on the token
 bot.run(TOKEN)
