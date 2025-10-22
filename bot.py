@@ -62,15 +62,33 @@ async def on_ready():
     except Exception as e:
         print(f"Error syncing commands: {e}")
 
+
+"""
+MISC COMMANDS
+    -test command (says hello to the user prompting the command)
+"""
+
 #test command
 @bot.tree.command(name="hello", description="Say hello to the bot!")
 async def hello(interaction: discord.Interaction):
     await interaction.response.send_message(f"Hello, {interaction.user.display_name}!")
 
+"""
+ADMIN COMMANDS
+    -create_draft (creates the draft, and its dedicated directory)
+"""
+
 #command that creates the draft
 @bot.tree.command(name="create_draft", description="Creates the Draft")
 async def create_draft(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+
+"""
+USER COMMANDS
+    -pick (reserves a single pick for the next turn)
+    -reserve_picks (reserves multiple picks so the bot can automatically pick from it)
+    -clear_pick (clears the picks from the user)
+"""
 
 #command that lets the user pick one bot
     #1 mandatory parameter for team pick
