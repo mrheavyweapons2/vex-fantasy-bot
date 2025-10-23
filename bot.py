@@ -44,6 +44,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 
 #discord imports
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
@@ -52,6 +53,15 @@ intents.message_content = True
 
 #assigns "!" as the command prefix for all commands
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+
+
+
+
+#dictionary to store drafts
+drafts = {} # key: draft_name, value: Draft instance
+
+
 
 #basically the bots constructor
 @bot.event
@@ -86,30 +96,59 @@ ADMIN COMMANDS
 #command that creates the draft
 @bot.tree.command(name="create_draft", description="Creates the Draft")
 async def create_draft(interaction: discord.Interaction,
-    draft_name: str,
+    draft_object: str,
+    draft_rounds: int,
     draft_limit: int = None
     ):
+    #if the draft already exists, it will not create a duplicate
+    if draft_object in drafts:
+        await interaction.response.send_message(f'A draft named "{draft_object}" already exists!', ephemeral=True)
+        return
+    #various input checkers
+    if draft_rounds < 1:
+        await interaction.response.send_message(f'Invalid amount of rounds.', ephemeral=True)
+        return
     #creates the draft object
-    newdraft = draft.Draft(draft_name)
+    new_draft = draft.Draft(draft_object, draft_rounds, draft_limit)
+    drafts[draft_object] = new_draft
     #sends the draft creator the draft information
     await interaction.response.send_message(
-        f'Draft "{draft_name}" created with {f"a limit of {draft_limit} people" if draft_limit else 'no limit'}')
+        f'{draft_rounds} Round Draft "{draft_object}" created with {f"a limit of {draft_limit} people" if draft_limit else 'no limit'}')
 
 #command to announce the draft
 @bot.tree.command(name="announce_draft", description="Announces the Draft and opens it for people to enter")
 async def announce_draft(interaction: discord.Interaction,
+    draft_object: str,
     channel: discord.TextChannel,
     emoji_react: str
+    ):
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+
+#command to set up the player csv file
+@bot.tree.command(name="setup_draft", description="Creates a CSV file with everyone who reacted using the announcement emoji.")
+async def setup_draft(interaction: discord.Interaction,
+    draft_object: str
     ):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command to announce the draft
 @bot.tree.command(name="start_draft", description="Starts the Draft")
 async def start_draft(interaction: discord.Interaction,
-    channel: str,
-    min_time_limit: int
+    draft_object: str,
+    draft_channel: discord.TextChannel,
+    min_time_limit: int = None
     ):
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    #send an initial message to the channel
+    try:
+        await draft_channel.send(f"The {drafts[draft_object].name} draft is starting soon!")
+        #set the drafts communcations channel to the proper one
+        drafts[draft_object].channel = draft_channel
+        print(f"{drafts[draft_object].name} draft starting in {drafts[draft_object].channel}")
+    except discord.Forbidden:
+        await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)
+        return
+    #respond to the user
+    await interaction.response.send_message(f"Command Not Yet Fully Implemented",ephemeral=True)
 """
 USER COMMANDS
     -pick (reserves a single pick for the next turn)
