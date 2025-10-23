@@ -72,13 +72,13 @@ draft_apidata = {} #key: draft_name, value: draft instance that refers to the ro
 @bot.event
 async def on_ready():
     #tells the console the bot is logged in
-    print(f'Logged in as {bot.user}')
+    print(f'[BOT] Logged in as {bot.user}')
     #registering commands with discord
     try:
         synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
+        print(f"[BOT] Synced {len(synced)} command(s)")
     except Exception as e:
-        print(f"Error syncing commands: {e}")
+        print(f"[BOT] Error syncing commands: {e}")
 
 
 """

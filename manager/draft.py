@@ -32,7 +32,7 @@ class Draft:
         #create a directory for all of the neccesary files to store data
         Draft.draft_dir = os.path.join("drafts",name)
         os.makedirs(Draft.draft_dir, exist_ok=True)
-        print(f"Draft directory created at: {Draft.draft_dir}")
+        print(f"[DRAFT] [FROM {name.upper()}] Directory created at: {Draft.draft_dir}")
         #print to the console
         print(f'[DRAFT] [FROM "{name.upper()}]" Draft Created.')
 
