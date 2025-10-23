@@ -46,7 +46,7 @@ class Draft:
     
     def generate_team_csv(self,teams,picks_remaining):
         #creates a new csv file in the draft directory
-        with open(f"{Draft.draft_dir}/teams", mode="w", newline="", encoding="utf-8") as file:
+        with open(f"{Draft.draft_dir}/teams.csv", mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["team", "picks remaining"])
             for team in teams:
