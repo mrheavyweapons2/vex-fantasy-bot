@@ -130,6 +130,9 @@ async def create_draft(interaction: discord.Interaction,
     #creates the robotevents object
     new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
     draft_apidata[draft_object] = new_api
+    #gets a list of teams for that event, and puts it into a csv file
+    draft_teams = new_api.get_teams_from_event()
+    new_draft.generate_team_csv(draft_teams,draft_rounds)
     #sends the draft creator the draft information
     await interaction.response.send_message(
         f'{draft_rounds} Round Draft "{draft_object}" created with {f"a limit of {draft_limit} people." if draft_limit else 'no limit.'}')
@@ -154,9 +157,8 @@ async def announce_draft(interaction: discord.Interaction,
             await announcement.delete()
             return
         print(emoji_react)
-        #set the drafts communcations channel to the proper one
-        drafts[draft_object].channel = channel
-        print(f"{drafts[draft_object].draft_name} draft announced in {drafts[draft_object].channel}")
+        #send the emoji in that channel
+        print(f"{drafts[draft_object].draft_name} draft announced in {channel}")
     #if theres a channel restriction
     except discord.Forbidden:
         await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)

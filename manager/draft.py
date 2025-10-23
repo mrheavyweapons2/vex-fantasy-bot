@@ -34,12 +34,20 @@ class Draft:
         os.makedirs(Draft.draft_dir, exist_ok=True)
         print(f"Draft directory created at: {Draft.draft_dir}")
         #print to the console
-        print(f'"{name}" draft created.')
+        print(f'[DRAFT] [FROM "{name.upper()}]" Draft Created.')
 
     #function that takes a list of tuples containing playerdata, and putting them in a CSV file for setup
-    def create_player_csv(playerdata):
+    def generate_player_csv(self,playerdata):
         #creates a new csv file in the draft directory
         with open(f"{Draft.draft_dir}/draft_main.csv", mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(("playerid","playername"))
             writer.writerows(playerdata)
+    
+    def generate_team_csv(self,teams,picks_remaining):
+        #creates a new csv file in the draft directory
+        with open(f"{Draft.draft_dir}/teams", mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["team", "picks remaining"])
+            for team in teams:
+                writer.writerow([team, str(picks_remaining)])
