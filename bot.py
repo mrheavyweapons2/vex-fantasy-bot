@@ -135,7 +135,7 @@ async def create_draft(interaction: discord.Interaction,
     #creates the draft object
     new_draft = draft.Draft(draft_object, draft_rounds, draft_limit)
     drafts[draft_object] = new_draft
-    # acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+    #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
     await interaction.response.defer()
     #creates the robotevents object
     new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
@@ -177,6 +177,8 @@ async def announce_draft(interaction: discord.Interaction,
 
     #send an initial message to the channel
     try:
+        #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+        await interaction.response.defer()
         announcement = await channel.send(f"The {drafts[draft_object].draft_name} draft is being announced! React with {emoji_react} to enter!")
         print("message printed (bogos binted)")
         try:
@@ -184,7 +186,7 @@ async def announce_draft(interaction: discord.Interaction,
 
         #if there is an error with the emoji
         except discord.HTTPException:
-            await interaction.response.send_message(f"Improper Emoji Raised.",ephemeral=True)
+            await interaction.followup.send(f"Improper Emoji Raised.",ephemeral=True)
             await announcement.delete()
             return
         #update the class
@@ -193,9 +195,9 @@ async def announce_draft(interaction: discord.Interaction,
         print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] Draft announced in {channel}")
     #if theres a channel restriction
     except discord.Forbidden:
-        await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)
+        await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    await interaction.followup.send(f"Draft Announced.")
 
 #command to set up the player csv file
 @bot.tree.command(name="setup_draft", description="Creates a CSV file with everyone who reacted using the announcement emoji.")
@@ -208,7 +210,15 @@ async def setup_draft(interaction: discord.Interaction,
     #get all of the users who reacted
     reaction = discord.utils.get(announcment.reactions, emoji=emoji)
     users = [user async for user in reaction.users() if not user.bot]
-    print(users)
+    player_data = [
+    [
+        user.id,
+        user.name,
+        user.nick or False
+    ]
+    for user in users
+    ]
+    drafts[draft_object].generate_player_csv(player_data)
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command to announce the draft

@@ -22,39 +22,39 @@ class Robotevent:
     #constructor
     def __init__(self, name, sku, token):
         #set the variables
-        Robotevent.event_sku = sku
-        Robotevent.api_token = token
-        Robotevent.event_name = name
+        self.event_sku = sku
+        self.api_token = token
+        self.event_name = name
         #get th events id
-        Robotevent.get_event_id(self)
+        self.get_event_id()
 
     #access the event through the API
 
     def get_event_id(self):
-        if Robotevent.event_id == None:
+        if self.event_id == None:
             #json request parameters
             url = "https://www.robotevents.com/api/v2/events"
-            params = {"sku": {Robotevent.event_sku}}
+            params = {"sku": {self.event_sku}}
             headers = {
-                "Authorization": f"Bearer {Robotevent.api_token}",
+                "Authorization": f"Bearer {self.api_token}",
                 "Accept": "application/json"
                 }
             #get a response from the api, and get the event id from the event sku
             response = requests.get(url, headers=headers, params=params)
             data = response.json()
             #pull the event id
-            Robotevent.event_id = data["data"][0]["id"]
-            print(f"[ROBOTEVENTS] [FROM {(Robotevent.event_name).upper()}] Event ID Acquired: {Robotevent.event_id}")
+            self.event_id = data["data"][0]["id"]
+            print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Event ID Acquired: {self.event_id}")
         else:
-            return Robotevent.event_id
+            return self.event_id
 
     def get_teams_from_event(self):
         #get the list of teams
         teams = []
         #json request parameters
-        url = f"{BASE_URL}/events/{Robotevent.event_id}/teams"
+        url = f"{BASE_URL}/events/{self.event_id}/teams"
         headers = {
-            "Authorization": f"Bearer {Robotevent.api_token}",
+            "Authorization": f"Bearer {self.api_token}",
             "Accept": "application/json"
             }
         #request the data
@@ -62,7 +62,7 @@ class Robotevent:
         data = response.json()
         #extract team numbers
         teams = [team["number"] for team in data.get("data", [])]
-        print(f"[ROBOTEVENTS] [FROM {(Robotevent.event_name).upper()}] Teams Acquired from {Robotevent.event_id}")
+        print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}")
         #return the teams
         return teams
 
