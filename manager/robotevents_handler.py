@@ -20,10 +20,11 @@ class Robotevent:
     event_id = None
 
     #constructor
-    def __init__(self, sku, token):
+    def __init__(self, name, sku, token):
         #set the variables
         Robotevent.event_sku = sku
         Robotevent.api_token = token
+        Robotevent.event_name = name
         #get th events id
         Robotevent.get_event_id(self)
 
@@ -42,7 +43,7 @@ class Robotevent:
         data = response.json()
         #pull the event id
         Robotevent.event_id = data["data"][0]["id"]
-        print("Data ID Acquired")
+        print(f"[ROBOTEVENTS] [FROM {(Robotevent.event_name).upper()}] Event ID Acquired: {Robotevent.event_id}")
 
     def get_teams_from_event(self):
         #get the list of teams
@@ -58,6 +59,7 @@ class Robotevent:
         data = response.json()
         #extract team numbers
         teams = [team["number"] for team in data.get("data", [])]
+        print(f"[ROBOTEVENTS] [FROM {(Robotevent.event_name).upper()}] Teams Acquired from {Robotevent.event_id}")
         #return the teams
         return teams
 

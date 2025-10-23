@@ -97,7 +97,7 @@ async def bear(interaction: discord.Interaction):
 async def get_teams(interaction: discord.Interaction,
     sku: str
     ):
-    rbh = robotevents_handler.Robotevent(sku, RB_TOKEN)
+    rbh = robotevents_handler.Robotevent("get_teams_command",sku, RB_TOKEN)
     teams = rbh.get_teams_from_event()
     await interaction.response.send_message(f"{teams}")
 
@@ -128,7 +128,7 @@ async def create_draft(interaction: discord.Interaction,
     new_draft = draft.Draft(draft_object, draft_rounds, draft_limit)
     drafts[draft_object] = new_draft
     #creates the robotevents object
-    new_api = robotevents_handler.Robotevent(draft_sku, RB_TOKEN)
+    new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
     draft_apidata[draft_object] = new_api
     #sends the draft creator the draft information
     await interaction.response.send_message(
