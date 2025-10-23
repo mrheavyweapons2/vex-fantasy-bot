@@ -19,6 +19,8 @@ class Draft:
     round_limit = None #number of rounds to be played
     time_limit_min = None #amount of time before the person is skipped
     channel = None #what channel the current draft should be operated in
+    announcement_id = None #the message ID for the announcement
+    emoji = None #what emoji was used to react to the announcement
 
     #directory data
     draft_dir = None
@@ -35,6 +37,16 @@ class Draft:
         print(f"[DRAFT] [FROM {name.upper()}] Directory created at: {Draft.draft_dir}")
         #print to the console
         print(f'[DRAFT] [FROM "{name.upper()}]" Draft Created.')
+
+    #function to log the announcement for the channel
+    def log_announcement(self, id, emoji):
+        Draft.announcement_id = id
+        Draft.emoji = emoji
+
+    #function to get the announcement id and emoji from the draft
+    def get_announcement_id(self):
+        return Draft.announcement_id, Draft.emoji
+
 
     #function that takes a list of tuples containing playerdata, and putting them in a CSV file for setup
     def generate_player_csv(self,playerdata):

@@ -53,7 +53,11 @@ from discord.ext import commands
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
 intents = discord.Intents.default()
+intents.reactions = True
+intents.messages = True
 intents.message_content = True
+intents.guilds = True
+intents.members = True
 
 #assigns "!" as the command prefix for all commands
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
