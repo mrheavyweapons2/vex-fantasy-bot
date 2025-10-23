@@ -31,19 +31,22 @@ class Robotevent:
     #access the event through the API
 
     def get_event_id(self):
-        #json request parameters
-        url = "https://www.robotevents.com/api/v2/events"
-        params = {"sku": {Robotevent.event_sku}}
-        headers = {
-            "Authorization": f"Bearer {Robotevent.api_token}",
-            "Accept": "application/json"
-            }
-        #get a response from the api, and get the event id from the event sku
-        response = requests.get(url, headers=headers, params=params)
-        data = response.json()
-        #pull the event id
-        Robotevent.event_id = data["data"][0]["id"]
-        print(f"[ROBOTEVENTS] [FROM {(Robotevent.event_name).upper()}] Event ID Acquired: {Robotevent.event_id}")
+        if Robotevent.event_id == None:
+            #json request parameters
+            url = "https://www.robotevents.com/api/v2/events"
+            params = {"sku": {Robotevent.event_sku}}
+            headers = {
+                "Authorization": f"Bearer {Robotevent.api_token}",
+                "Accept": "application/json"
+                }
+            #get a response from the api, and get the event id from the event sku
+            response = requests.get(url, headers=headers, params=params)
+            data = response.json()
+            #pull the event id
+            Robotevent.event_id = data["data"][0]["id"]
+            print(f"[ROBOTEVENTS] [FROM {(Robotevent.event_name).upper()}] Event ID Acquired: {Robotevent.event_id}")
+        else:
+            return Robotevent.event_id
 
     def get_teams_from_event(self):
         #get the list of teams

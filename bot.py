@@ -159,8 +159,9 @@ async def create_draft(interaction: discord.Interaction,
     msg = (
         f'Draft "{draft_object}" created successfully!\n'
         f'Rounds: {draft_rounds}\n'
-        f'Teams loaded: {teams_count}\n'
-        f'SKU: {draft_sku}'
+        f'Teams Loaded: {teams_count}\n'
+        f'Event ID: {new_api.get_event_id()}\n'
+        f'Event SKU: {draft_sku}\n'
         f'Limit: {draft_limit}'
     )
 
