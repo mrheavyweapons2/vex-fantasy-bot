@@ -12,37 +12,52 @@ BASE_URL = "https://www.robotevents.com/api/v2"
 import requests
 
 class Robotevent:
-    #values to use all over robotevents
-    event_sku = None
+    #api token
     api_token = None
+    #values to use all over robotevents
+    event_name = None
+    event_sku = None
+    event_id = None
 
     #constructor
     def __init__(self, sku, token):
         #set the variables
         Robotevent.event_sku = sku
         Robotevent.api_token = token
+        #get th events id
+        Robotevent.get_event_id(self)
 
-    #gets a list of teams from an event
-    def get_teams_from_event():
-        url = f"{BASE_URL}/teams?eventCode={Robotevent.event_sku}&per_page=100"
+    #access the event through the API
+
+    def get_event_id(self):
+        #json request parameters
+        url = "https://www.robotevents.com/api/v2/events"
+        params = {"sku": {Robotevent.event_sku}}
         headers = {
-            "Authorization": f"Bearer {Robotevent.api_token}"
-        }
+            "Authorization": f"Bearer {Robotevent.api_token}",
+            "Accept": "application/json"
+            }
+        #get a response from the api, and get the event id from the event sku
+        response = requests.get(url, headers=headers, params=params)
+        data = response.json()
+        #pull the event id
+        Robotevent.event_id = data["data"][0]["id"]
+        print("Data ID Acquired")
 
+    def get_teams_from_event(self):
+        #get the list of teams
         teams = []
-        page = 1
-
-        while True:
-            response = requests.get(url + f"&page={page}", headers=headers)
-            if response.status_code != 200:
-                raise Exception(f"Failed to fetch teams: {response.status_code} {response.text}")
-
-            data = response.json()["data"]
-            if not data:
-                break  # No more teams
-
-            teams.extend(data)
-            page += 1
-
+        #json request parameters
+        url = f"{BASE_URL}/events/{Robotevent.event_id}/teams"
+        headers = {
+            "Authorization": f"Bearer {Robotevent.api_token}",
+            "Accept": "application/json"
+            }
+        #request the data
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        #extract team numbers
+        teams = [team["number"] for team in data.get("data", [])]
+        #return the teams
         return teams
 

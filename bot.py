@@ -33,6 +33,9 @@ MS 5: QUALITY OF LIFE CHANGES
 #import draft
 from manager import draft
 
+#import robotevents
+from manager import robotevents_handler
+
 #imports discord token from an encrypted .env file
 import os
 from dotenv import load_dotenv
@@ -60,7 +63,8 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 
 #dictionary to store drafts
-drafts = {} # key: draft_name, value: Draft instance
+drafts = {} # key: draft_name, value: draft instance
+draft_apidata = {} #key: draft_name, value: draft instance that refers to the robotevents side
 
 
 
@@ -78,14 +82,24 @@ async def on_ready():
 
 
 """
-MISC COMMANDS
+MISC AND TEST COMMANDS
     -bear (test command that sends a bear gif to make sure the bots working)
+    -get_teams (creates a temporary API object and prints a list of teams to make sure the API request is working)
 """
 
 #test command
 @bot.tree.command(name="bear", description="sends a bear gif")
 async def bear(interaction: discord.Interaction):
     await interaction.response.send_message("https://tenor.com/view/bear-scream-gif-7281540763674856279")
+
+#command that lets the user clear their list of picks
+@bot.tree.command(name="get_teams", description="Gives you a list of teams from a certain event.")
+async def get_teams(interaction: discord.Interaction,
+    sku: str
+    ):
+    rbh = robotevents_handler.Robotevent(sku, RB_TOKEN)
+    teams = rbh.get_teams_from_event()
+    await interaction.response.send_message(f"{teams}")
 
 """
 ADMIN COMMANDS
@@ -98,6 +112,7 @@ ADMIN COMMANDS
 @bot.tree.command(name="create_draft", description="Creates the Draft")
 async def create_draft(interaction: discord.Interaction,
     draft_object: str,
+    draft_sku: str,
     draft_rounds: int,
     draft_limit: int = None
     ):
@@ -112,9 +127,12 @@ async def create_draft(interaction: discord.Interaction,
     #creates the draft object
     new_draft = draft.Draft(draft_object, draft_rounds, draft_limit)
     drafts[draft_object] = new_draft
+    #creates the robotevents object
+    new_api = robotevents_handler.Robotevent(draft_sku, RB_TOKEN)
+    draft_apidata[draft_object] = new_api
     #sends the draft creator the draft information
     await interaction.response.send_message(
-        f'{draft_rounds} Round Draft "{draft_object}" created with {f"a limit of {draft_limit} people" if draft_limit else 'no limit'}')
+        f'{draft_rounds} Round Draft "{draft_object}" created with {f"a limit of {draft_limit} people." if draft_limit else 'no limit.'}')
 
 #command to announce the draft
 @bot.tree.command(name="announce_draft", description="Announces the Draft and opens it for people to enter")
@@ -207,6 +225,7 @@ async def clear_picks(interaction: discord.Interaction):
 @bot.tree.command(name="draft_status", description="Tells the user the current draft status.")
 async def draft_status(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+
 
 #runs the bot on the token
 bot.run(DS_TOKEN)
