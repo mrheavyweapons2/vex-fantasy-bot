@@ -39,7 +39,8 @@ from dotenv import load_dotenv
 
 #load variables from .env file
 load_dotenv()  
-TOKEN = os.getenv("DISCORD_TOKEN")
+DS_TOKEN = os.getenv("DISCORD_TOKEN")
+RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
 
 
 #discord imports
@@ -208,4 +209,4 @@ async def draft_status(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #runs the bot on the token
-bot.run(TOKEN)
+bot.run(DS_TOKEN)
