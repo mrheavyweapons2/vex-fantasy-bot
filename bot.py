@@ -70,7 +70,10 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 drafts = {} # key: draft_name, value: draft instance
 draft_apidata = {} #key: draft_name, value: draft instance that refers to the robotevents side
 
-
+"""
+BOT EVENTS
+    -on_ready (basically the bots constructor)
+"""
 
 #basically the bots constructor
 @bot.event
@@ -109,6 +112,7 @@ async def get_teams(interaction: discord.Interaction,
 ADMIN COMMANDS
     -create_draft (creates the draft, and its dedicated directory)
     -announce_draft (announces the draft and opens it for people to enter)
+    -setup_draft (creates and obtains the last bit of data needed for the draft to function)
     -start_draft (starts the draft for everyone to start picking)
 """
 
@@ -122,24 +126,45 @@ async def create_draft(interaction: discord.Interaction,
     ):
     #if the draft already exists, it will not create a duplicate
     if draft_object in drafts:
-        await interaction.response.send_message(f'A draft named "{draft_object}" already exists!', ephemeral=True)
+        print(f"[BOT] [FROM {draft_object}] Draft Already Exists")
         return
     #various input checkers
     if draft_rounds < 1:
-        await interaction.response.send_message(f'Invalid amount of rounds.', ephemeral=True)
+        print(f"[BOT] [FROM {draft_object}] Invalid Amount of Rounds")
         return
     #creates the draft object
     new_draft = draft.Draft(draft_object, draft_rounds, draft_limit)
     drafts[draft_object] = new_draft
+    # acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+    await interaction.response.defer()
     #creates the robotevents object
     new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
     draft_apidata[draft_object] = new_api
     #gets a list of teams for that event, and puts it into a csv file
     draft_teams = new_api.get_teams_from_event()
     new_draft.generate_team_csv(draft_teams,draft_rounds)
-    #sends the draft creator the draft information
-    await interaction.response.send_message(
-        f'{draft_rounds} Round Draft "{draft_object}" created with {f"a limit of {draft_limit} people." if draft_limit else 'no limit.'}')
+    #safely compute teams count and send the final followup (we already deferred)
+    try:
+        if draft_teams is None:
+            teams_count = 0
+        elif hasattr(draft_teams, "__len__"):
+            teams_count = len(draft_teams)
+        else:
+            # if it's an iterator/generator, convert to list (be cautious with very large datasets)
+            draft_teams = list(draft_teams)
+            teams_count = len(draft_teams)
+    except Exception:
+        teams_count = 0
+
+    msg = (
+        f'Draft "{draft_object}" created successfully!\n'
+        f'Rounds: {draft_rounds}\n'
+        f'Teams loaded: {teams_count}\n'
+        f'SKU: {draft_sku}'
+        f'Limit: {draft_limit}'
+    )
+
+    await interaction.followup.send(msg)
 
 #command to announce the draft
 @bot.tree.command(name="announce_draft", description="Announces the Draft and opens it for people to enter")
@@ -155,14 +180,16 @@ async def announce_draft(interaction: discord.Interaction,
         print("message printed (bogos binted)")
         try:
             await announcement.add_reaction(emoji_react)
+
         #if there is an error with the emoji
         except discord.HTTPException:
             await interaction.response.send_message(f"Improper Emoji Raised.",ephemeral=True)
             await announcement.delete()
             return
-        print(emoji_react)
+        #update the class
+        drafts[draft_object].log_announcement(announcement.id,emoji_react,channel)
         #send the emoji in that channel
-        print(f"{drafts[draft_object].draft_name} draft announced in {channel}")
+        print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] Draft announced in {channel}")
     #if theres a channel restriction
     except discord.Forbidden:
         await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)
@@ -174,6 +201,13 @@ async def announce_draft(interaction: discord.Interaction,
 async def setup_draft(interaction: discord.Interaction,
     draft_object: str
     ):
+    #get the emoji and announcement
+    aid, emoji, channel = drafts[draft_object].get_announcement_id()
+    announcment = await channel.fetch_message(aid)
+    #get all of the users who reacted
+    reaction = discord.utils.get(announcment.reactions, emoji=emoji)
+    users = [user async for user in reaction.users() if not user.bot]
+    print(users)
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command to announce the draft
