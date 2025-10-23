@@ -5,7 +5,9 @@ Author: Jeremiah Nairn
 Description: Holds all of the functionality for processing the drafts
 """
 
+#neccesary imports
 import csv
+import os
 
 #main class
 class Draft:
@@ -19,8 +21,7 @@ class Draft:
     channel = None #what channel the current draft should be operated in
 
     #directory data
-    
-
+    draft_dir = None
 
     #initilizer
     def __init__(self, name, rounds, limit):
@@ -29,7 +30,16 @@ class Draft:
         Draft.round_limit = rounds
         Draft.people_limit = limit
         #create a directory for all of the neccesary files to store data
-
+        Draft.draft_dir = os.path.join("drafts",name)
+        os.makedirs(Draft.draft_dir, exist_ok=True)
+        print(f"Draft directory created at: {Draft.draft_dir}")
         #print to the console
         print(f'"{name}" draft created.')
-        pass
+
+    #function that takes a list of tuples containing playerdata, and putting them in a CSV file for setup
+    def create_player_csv(playerdata):
+        #creates a new csv file in the draft directory
+        with open(f"{Draft.draft_dir}/draft_main.csv", mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(("playerid","playername"))
+            writer.writerows(playerdata)

@@ -122,6 +122,26 @@ async def announce_draft(interaction: discord.Interaction,
     channel: discord.TextChannel,
     emoji_react: str
     ):
+
+    #send an initial message to the channel
+    try:
+        announcement = await channel.send(f"The {drafts[draft_object].draft_name} draft is being announced! React with {emoji_react} to enter!")
+        print("message printed (bogos binted)")
+        try:
+            await announcement.add_reaction(emoji_react)
+        #if there is an error with the emoji
+        except discord.HTTPException:
+            await interaction.response.send_message(f"Improper Emoji Raised.",ephemeral=True)
+            await announcement.delete()
+            return
+        print(emoji_react)
+        #set the drafts communcations channel to the proper one
+        drafts[draft_object].channel = channel
+        print(f"{drafts[draft_object].draft_name} draft announced in {drafts[draft_object].channel}")
+    #if theres a channel restriction
+    except discord.Forbidden:
+        await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)
+        return
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command to set up the player csv file
@@ -140,10 +160,10 @@ async def start_draft(interaction: discord.Interaction,
     ):
     #send an initial message to the channel
     try:
-        await draft_channel.send(f"The {drafts[draft_object].name} draft is starting soon!")
+        await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
         #set the drafts communcations channel to the proper one
         drafts[draft_object].channel = draft_channel
-        print(f"{drafts[draft_object].name} draft starting in {drafts[draft_object].channel}")
+        print(f"{drafts[draft_object].draft_name} draft starting in {drafts[draft_object].channel}")
     except discord.Forbidden:
         await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)
         return
