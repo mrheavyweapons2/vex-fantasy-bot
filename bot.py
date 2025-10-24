@@ -7,20 +7,11 @@ Description: This is a fantasy draft bot built specificly for vex and robotevent
 
 """
 CHECKLIST/ORDER OF COMPLETION
-MS 1: DRAFT REGISTRATION
-    -draft admins should be able to start a draft using a single command with parameters
-    -bot will then make a directory for each draft for that data to be stored
-    -then the bot will announce the draft (somewhere) and use a reaction emoji for people to register
-    -registered people will then be logged into a CSV file where their picks will be stored in the future
-MS 2: MAIN DRAFT DATA MANIPULATION
-    -add a command to queue/select a pick
-    -add a similar command that backlogs your picks and will automatically pick for you based on whats available
-    -prompt users when they are 1-3 places in the queue to pick
-    -log their picks in the csv file
-    -when the
-MS 3: AUTOMATE INITIAL DATA COLLECTION
-    -import the robotevents api and use it to get a list of teams
-MS 4: AUTOMATE DRAFT RESULTS
+MS 1: DRAFT REGISTRATION (COMPLETE)
+MS 2: MAIN DRAFT DATA MANIPULATION (COMPLETE)
+MS 3: AUTOMATE INITIAL DATA COLLECTION (COMPLETE)
+MS 4: 
+MS 5: AUTOMATE DRAFT RESULTS
     -when the draft is finished draft admins can send a command for the bot to compute the draft results based on parameters
     -if the data is incomplete, it will error
     -if not, it will send an image of the CSV data or send the file itself
@@ -306,8 +297,27 @@ async def reserve_picks(interaction: discord.Interaction,
     team3: str = None,
     team4: str = None
     ):
-
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    #create a list to send to the function
+    picks = []
+    #goes through one by one
+    picks.append(team1.upper()) if isinstance(team1, str) else None
+    picks.append(team2.upper()) if isinstance(team2, str) else None
+    picks.append(team3.upper()) if isinstance(team3, str) else None
+    picks.append(team4.upper()) if isinstance(team4, str) else None
+    #deletes none if it exists
+    for pick in picks:
+        if pick == None:
+            picks.remove(pick)
+    for draft in drafts:
+        if drafts[draft].channel == drafter_channel:
+            #validate and make sure person is in the draft
+            if drafts[draft].validate_participant(drafter_id) == True:
+                #put the pick in their queue
+                completed = drafts[draft].pick_multiple(drafter_id,picks,doublepick)
+    await interaction.response.send_message(f"{picks} Chosen." if completed else "Teams or Player does not exist.",ephemeral=True)
 
 #command that lets the user clear their list of picks
 @bot.tree.command(name="clear_picks", description="Clears any picks that you currently have.")

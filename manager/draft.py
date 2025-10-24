@@ -26,6 +26,10 @@ class Draft:
     draft_data = []
     current_round = 1 #the current round the draft is on
 
+    #function to return the team data
+    def get_teams(self):
+        return self.teams
+
     #initilizer
     def __init__(self, name, rounds, limit):
         #get our unique instance values from the initialization
@@ -112,8 +116,25 @@ class Draft:
                 else:
                     success = False
         #return false if found is false, otherwise true
-        return False if (success == False) else True
+        return success
 
     #function to add more teams to a players queue
-    def pick_multiple(self,player_id,picks):
-        pass
+    def pick_multiple(self, player_id, picks, doublepick):
+        success = False
+        #find the player once
+        player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
+        if player_data is None:
+            return False
+        #iterate with index to fill.
+        for index, pick in enumerate(list(picks)):  #iterate over a shallow copy to avoid mutation issues
+            if not self.validate_availability(pick):
+                picks.remove(pick)
+                continue
+            # set player's queue slot and double_pick flag
+            player_data[f"queue_{index}"] = pick
+            player_data["double_pick"] = doublepick
+            # log and mark success
+            print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
+            success = True
+
+        return success
