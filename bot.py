@@ -262,7 +262,7 @@ async def start_draft(interaction: discord.Interaction,
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
         #set the drafts communcations channel to the proper one
         drafts[draft_object].channel = draft_channel
-        print(f"{drafts[draft_object].draft_name} draft starting in {drafts[draft_object].channel}")
+        print(f"[BOT] [FROM {drafts[draft_object].draft_name}] Draft starting in {drafts[draft_object].channel}")
     except discord.Forbidden:
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return
@@ -280,6 +280,8 @@ USER COMMANDS
     #1 mandatory parameter for team pick
 @bot.tree.command(name="pick", description="Reserve a Single Pick for your next turn")
 async def pick(interaction: discord.Interaction, team: str):
+    #upper the pick
+    team = team.upper()
     #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel
@@ -290,7 +292,7 @@ async def pick(interaction: discord.Interaction, team: str):
             if drafts[draft].validate_participant(drafter_id) == True:
                 #put the pick in their queue
                 completed = drafts[draft].pick_one(drafter_id,team)
-    await interaction.response.send_message("Team Chosen." if completed else "Error while getting team.",ephemeral=True)
+    await interaction.response.send_message(f"{team} Chosen." if completed else "Team or Player does not exist.",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
     #1 mandatory parameter for double picking teams
@@ -312,11 +314,15 @@ async def reserve_picks(interaction: discord.Interaction,
 async def clear_picks(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
-#command that lets the user clear their list of picks
-@bot.tree.command(name="draft_status", description="Tells the user the current draft status.")
-async def draft_status(interaction: discord.Interaction):
+#command to tell people whos currently supposed to be picking
+@bot.tree.command(name="whos_up", description="Tells the user who is currently supposed to be picking.")
+async def whos_up(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
+#command to show the board of the active draft
+@bot.tree.command(name="show_board", description="Tells the user who is currently supposed to be picking.")
+async def show_board(interaction: discord.Interaction):
+    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #runs the bot on the token
 bot.run(DS_TOKEN)

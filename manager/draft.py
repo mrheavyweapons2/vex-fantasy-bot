@@ -96,6 +96,7 @@ class Draft:
     #function to pick for a player from the queue (needs to be rewritten)
     def pick_one(self,player_id,pick):
         #check if you can pick them
+        success = False
         if self.validate_availability(pick):
             success = True
             #set players pick in the queue
@@ -104,6 +105,10 @@ class Draft:
                     player_data["queue_1"] = pick
                     player_data["double_pick"] = False
                     #wipe the other picks
+                    for r in range(3):
+                        player_data[f"queue_{r+2}"] = None
+                    #print check to console
+                    print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
                 else:
                     success = False
         #return false if found is false, otherwise true
