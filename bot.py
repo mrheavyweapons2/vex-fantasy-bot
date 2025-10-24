@@ -8,15 +8,17 @@ Description: This is a fantasy draft bot built specificly for vex and robotevent
 """
 CHECKLIST/ORDER OF COMPLETION
 MS 1: DRAFT REGISTRATION (COMPLETE)
-MS 2: MAIN DRAFT DATA MANIPULATION (COMPLETE)
+MS 2: PEOPLE DATA COLLECTION (COMPLETE)
 MS 3: AUTOMATE INITIAL DATA COLLECTION (COMPLETE)
-MS 4: 
+MS 4: MAIN DRAFT FUNCTIONALITY
+    -draft bot will create a thread to run through the draft depending on how many rounds
+    -
 MS 5: AUTOMATE DRAFT RESULTS
     -when the draft is finished draft admins can send a command for the bot to compute the draft results based on parameters
     -if the data is incomplete, it will error
     -if not, it will send an image of the CSV data or send the file itself
     -also will possibly just list the results in text
-MS 5: QUALITY OF LIFE CHANGES
+MS 6: QUALITY OF LIFE CHANGES
     -add an optional time limit for the bot to skip over people, skipped people can pick later but only at first come first serve
     -automated draft results will be placed in a cleaner excel file to look better
 """
@@ -323,6 +325,8 @@ async def reserve_picks(interaction: discord.Interaction,
 @bot.tree.command(name="clear_picks", description="Clears any picks that you currently have.")
 async def clear_picks(interaction: discord.Interaction):
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+
+#command that shows the user their current picks
 
 #command to tell people whos currently supposed to be picking
 @bot.tree.command(name="whos_up", description="Tells the user who is currently supposed to be picking.")

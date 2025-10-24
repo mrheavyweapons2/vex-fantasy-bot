@@ -96,45 +96,53 @@ class Draft:
                 if team["picks_remaining"] == 0:
                     success = False
         return success
+    
+    #function to clear the users picks
+    def clear_picks(self,player_id):
+        player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
+        if player_data is None:
+            return False
+        #set all of the queue picks to none
+        for queue in range (4):
+            player_data[f"queue_{queue+1}"] = None
+        player_data["double_pick"] = False
+        return True
 
     #function to pick for a player from the queue (needs to be rewritten)
     def pick_one(self,player_id,pick):
         #check if you can pick them
         success = False
-        if self.validate_availability(pick):
-            success = True
-            #set players pick in the queue
-            for player_data in self.draft_data:
-                if player_data["id"] == player_id:
-                    player_data["queue_1"] = pick
-                    player_data["double_pick"] = False
-                    #wipe the other picks
-                    for r in range(3):
-                        player_data[f"queue_{r+2}"] = None
-                    #print check to console
-                    print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
-                else:
-                    success = False
+        if self.clear_picks(player_id):
+            if self.validate_availability(pick):
+                success = True
+                #set players pick in the queue
+                for player_data in self.draft_data:
+                    if player_data["id"] == player_id:
+                        player_data["queue_1"] = pick
+                        player_data["double_pick"] = False
+                        #print check to console
+                        print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
+                    else:
+                        success = False
         #return false if found is false, otherwise true
         return success
 
     #function to add more teams to a players queue
     def pick_multiple(self, player_id, picks, doublepick):
         success = False
-        #find the player once
-        player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
-        if player_data is None:
-            return False
-        #iterate with index to fill.
-        for index, pick in enumerate(list(picks)):  #iterate over a shallow copy to avoid mutation issues
-            if not self.validate_availability(pick):
-                picks.remove(pick)
-                continue
-            # set player's queue slot and double_pick flag
-            player_data[f"queue_{index}"] = pick
-            player_data["double_pick"] = doublepick
-            # log and mark success
-            print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
-            success = True
-
+        #clear the picks
+        if self.clear_picks(player_id):
+            #find the player once
+            player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
+            #iterate with index to fill.
+            for index, pick in enumerate(list(picks)):  #iterate over a shallow copy to avoid mutation issues
+                if not self.validate_availability(pick):
+                    picks.remove(pick)
+                    continue
+                #set player's queue slot and double_pick flag
+                player_data[f"queue_{index}"] = pick
+                player_data["double_pick"] = doublepick
+                #log and mark success
+                print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
+                success = True
         return success
