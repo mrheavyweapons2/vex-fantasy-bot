@@ -50,7 +50,6 @@ class Draft:
     def get_announcement_id(self):
         return self.announcement_id, self.emoji, self.announce_channel
 
-
     #function that takes a list of dicts containing playerdata
     def generate_player_data(self,player_data):
         #for each player, turn them into an expanded dict and add them to the player list
@@ -85,6 +84,7 @@ class Draft:
                 return True
         return False
     
+    #function to check if the team is available to pick
     def validate_availability(self,pick):
         #test startments
         success = False

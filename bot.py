@@ -59,8 +59,9 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 ADMIN_BYPASS_IDS = [453273679095136286]
 
 """
-MISC FUNCTIONS
+HELPER FUNCTIONS
     -is_admin (checks of the user is an admin)
+    -validation_check(checks if the user is in the draft and in the correct channel)
 """
 
 #function to return true if the user is an administator, false if not
@@ -79,7 +80,14 @@ def is_admin(interaction: discord.Interaction) -> bool:
         return False
     return False
 
-
+def validation_check(drafter_id, drafter_channel) -> bool:
+    for draft in drafts:
+        if drafts[draft].channel == drafter_channel:
+            #validate and make sure person is in the draft
+            if drafts[draft].validate_participant(drafter_id) == True:
+                #code here
+                return True, draft
+    return False, None
 
 #dictionary to store drafts
 drafts = {} # key: draft_name, value: draft instance
@@ -279,13 +287,13 @@ async def pick(interaction: discord.Interaction, team: str):
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel
     #check what channel this draft is affilliated with
-    for draft in drafts:
-        if drafts[draft].channel == drafter_channel:
-            #validate and make sure person is in the draft
-            if drafts[draft].validate_participant(drafter_id) == True:
-                #put the pick in their queue
-                completed = drafts[draft].pick_one(drafter_id,team)
-    await interaction.response.send_message(f"{team} Chosen." if completed else "Team or Player does not exist.",ephemeral=True)
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #put the pick in their queue
+        completed = drafts[draft].pick_one(drafter_id,team)
+        await interaction.response.send_message(f"{team} Chosen." if completed else "Team or Player does not exist.",ephemeral=True)
+        return
+    await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
     #1 mandatory parameter for double picking teams
@@ -313,30 +321,66 @@ async def reserve_picks(interaction: discord.Interaction,
     for pick in picks:
         if pick == None:
             picks.remove(pick)
-    for draft in drafts:
-        if drafts[draft].channel == drafter_channel:
-            #validate and make sure person is in the draft
-            if drafts[draft].validate_participant(drafter_id) == True:
-                #put the pick in their queue
-                completed = drafts[draft].pick_multiple(drafter_id,picks,doublepick)
-    await interaction.response.send_message(f"{picks} Chosen." if completed else "Teams or Player does not exist.",ephemeral=True)
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #put the pick in their queue
+        completed = drafts[draft].pick_multiple(drafter_id,picks,doublepick)
+        await interaction.response.send_message(f"{picks} Chosen." if completed else "Teams or Player does not exist.",ephemeral=True)
+        return
+    await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
 #command that lets the user clear their list of picks
 @bot.tree.command(name="clear_picks", description="Clears any picks that you currently have.")
 async def clear_picks(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    #check what channel this draft is affilliated with
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #code here
+        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
 #command that shows the user their current picks
+@bot.tree.command(name="show_picks", description="Shows your current picks")
+async def show_picks(interaction: discord.Interaction):
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #code here
+        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
 #command to tell people whos currently supposed to be picking
 @bot.tree.command(name="whos_up", description="Tells the user who is currently supposed to be picking.")
 async def whos_up(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #code here
+        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
 #command to show the board of the active draft
 @bot.tree.command(name="show_board", description="Tells the user who is currently supposed to be picking.")
 async def show_board(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #code here
+        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
 #runs the bot on the token
 bot.run(DS_TOKEN)
