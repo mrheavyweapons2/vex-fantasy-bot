@@ -339,7 +339,7 @@ async def clear_picks(interaction: discord.Interaction):
     passed,draft = validation_check(drafter_id,drafter_channel)
     if passed:
         #code here
-        if clear_picks(drafter_id):
+        if drafts[draft].clear_picks(drafter_id):
             await interaction.response.send_message(f"Picks Cleared",ephemeral=True)
         else:
             await interaction.response.send_message(f"Error While Clearing Picks",ephemeral=True)
@@ -355,7 +355,7 @@ async def show_picks(interaction: discord.Interaction):
     passed,draft = validation_check(drafter_id,drafter_channel)
     if passed:
         #get the picks
-        picks = draft.get_queue(drafter_id)
+        picks = drafts[draft].get_queue(drafter_id)
         await interaction.response.send_message(f"You have Picked {picks}",ephemeral=True)
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
@@ -363,19 +363,6 @@ async def show_picks(interaction: discord.Interaction):
 #command to tell people whos currently supposed to be picking
 @bot.tree.command(name="whos_up", description="Tells the user who is currently supposed to be picking.")
 async def whos_up(interaction: discord.Interaction):
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
-    passed,draft = validation_check(drafter_id,drafter_channel)
-    if passed:
-        #code here
-        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
-        return    
-    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
-
-#command to show the board of the active draft
-@bot.tree.command(name="show_board", description="Tells the user who is currently supposed to be picking.")
-async def show_board(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel

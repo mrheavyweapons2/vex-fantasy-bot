@@ -72,7 +72,6 @@ class Draft:
                 player[f"queue_{i+1}"] = None
             #add the player to the list
             self.draft_data.append(player)
-        print(self.draft_data)
         pass
     
     #function to generate a list of dicts containing teams and how many picks they have
@@ -141,15 +140,20 @@ class Draft:
         if self.clear_picks(player_id):
             #find the player once
             player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
-            #iterate with index to fill.
-            for index, pick in enumerate(list(picks)):  #iterate over a shallow copy to avoid mutation issues
+            if player_data is None:
+                return False
+            #iterate over picks without mutating the input and fill up to 4 slots
+            assigned = 0
+            for pick in picks:
+                if assigned >= 4:
+                    break
                 if not self.validate_availability(pick):
-                    picks.remove(pick)
                     continue
-                #set player's queue slot and double_pick flag
-                player_data[f"queue_{index}"] = pick
+                #set player's queue slot (1-based) and double_pick flag
+                player_data[f"queue_{assigned+1}"] = pick
                 player_data["double_pick"] = doublepick
                 #log and mark success
                 print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
                 success = True
+                assigned += 1
         return success
