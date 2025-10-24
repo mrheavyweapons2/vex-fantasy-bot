@@ -25,7 +25,6 @@ MS 6: QUALITY OF LIFE CHANGES
 
 #import draft
 from manager import draft
-
 #import robotevents
 from manager import robotevents_handler
 
@@ -38,11 +37,14 @@ load_dotenv()
 DS_TOKEN = os.getenv("DISCORD_TOKEN")
 RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
 
-
 #discord imports
 import discord
 from discord import app_commands
 from discord.ext import commands
+
+#import other neccessary modules
+import time
+import threading
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
 intents = discord.Intents.default()
@@ -80,6 +82,7 @@ def is_admin(interaction: discord.Interaction) -> bool:
         return False
     return False
 
+#function to validate if the user is allowed to run the 
 def validation_check(drafter_id, drafter_channel) -> bool:
     for draft in drafts:
         if drafts[draft].channel == drafter_channel:
@@ -88,6 +91,15 @@ def validation_check(drafter_id, drafter_channel) -> bool:
                 #code here
                 return True, draft
     return False, None
+
+#function to run the draft
+def run_draft(draft_instance):
+    #get the draft order
+    drafters = draft_instance.draft_data
+    print(f"[BOT] [FROM {draft_instance.draft_name}] Draft order is as follows:")
+    for drafter in drafters:
+        print(drafter["name"])
+    pass
 
 #dictionary to store drafts
 drafts = {} # key: draft_name, value: draft instance
@@ -263,7 +275,9 @@ async def start_draft(interaction: discord.Interaction,
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
         #set the drafts communcations channel to the proper one
         drafts[draft_object].channel = draft_channel
-        print(f"[BOT] [FROM {drafts[draft_object].draft_name}] Draft starting in {drafts[draft_object].channel}")
+        #start the thread
+        thread_instance = threading.Thread(target=run_draft, args=(drafts[draft_object],), daemon=True)
+        thread_instance.start()
     except discord.Forbidden:
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return

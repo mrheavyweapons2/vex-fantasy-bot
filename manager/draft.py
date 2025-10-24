@@ -17,6 +17,7 @@ class Draft:
     announce_channel = None #what channel the announcement was sat in
     announcement_id = None #the message ID for the announcement
     emoji = None #what emoji was used to react to the announcement
+    total_participants = None
 
     #directory data
     draft_dir = None
@@ -25,6 +26,7 @@ class Draft:
     teams = []
     draft_data = []
     current_round = 1 #the current round the draft is on
+    current_position = 1
 
     #initilizer
     def __init__(self, name, rounds, limit):
