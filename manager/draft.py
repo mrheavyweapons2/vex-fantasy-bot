@@ -26,10 +26,6 @@ class Draft:
     draft_data = []
     current_round = 1 #the current round the draft is on
 
-    #function to return the team data
-    def get_teams(self):
-        return self.teams
-
     #initilizer
     def __init__(self, name, rounds, limit):
         #get our unique instance values from the initialization
@@ -49,7 +45,18 @@ class Draft:
     #function to get the announcement id and emoji from the draft
     def get_announcement_id(self):
         return self.announcement_id, self.emoji, self.announce_channel
-
+    
+    #function to return the team data
+    def get_teams(self):
+        return self.teams
+    
+    #function to return the queue data
+    def get_queue(self, player_id):
+        for player_data in self.draft_data:
+            if player_data["id"] == player_id:
+                picks = [player_data["queue_1"],player_data["queue_2"],player_data["queue_3"],player_data["queue_4"]]
+                return picks
+            
     #function that takes a list of dicts containing playerdata
     def generate_player_data(self,player_data):
         #for each player, turn them into an expanded dict and add them to the player list

@@ -339,7 +339,10 @@ async def clear_picks(interaction: discord.Interaction):
     passed,draft = validation_check(drafter_id,drafter_channel)
     if passed:
         #code here
-        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+        if clear_picks(drafter_id):
+            await interaction.response.send_message(f"Picks Cleared",ephemeral=True)
+        else:
+            await interaction.response.send_message(f"Error While Clearing Picks",ephemeral=True)
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
@@ -351,8 +354,9 @@ async def show_picks(interaction: discord.Interaction):
     drafter_channel = interaction.channel
     passed,draft = validation_check(drafter_id,drafter_channel)
     if passed:
-        #code here
-        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+        #get the picks
+        picks = draft.get_queue(drafter_id)
+        await interaction.response.send_message(f"You have Picked {picks}",ephemeral=True)
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
