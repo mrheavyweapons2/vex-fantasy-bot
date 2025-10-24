@@ -65,6 +65,11 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 #admin bypass id (allowed even if not an actual server administrator)
 ADMIN_BYPASS_IDS = [453273679095136286]
 
+"""
+MISC FUNCTIONS
+    -is_admin (checks of the user is an admin)
+"""
+
 #function to return true if the user is an administator, false if not
 def is_admin(interaction: discord.Interaction) -> bool:
     try:
@@ -247,8 +252,9 @@ async def setup_draft(interaction: discord.Interaction,
     }
     for user in users
     ]
+    #generate the player data
     drafts[draft_object].generate_player_data(player_data)
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+    await interaction.response.send_message(f"Draft Setup.")
 
 #command to announce the draft
 @bot.tree.command(name="start_draft", description="Starts the Draft")
@@ -257,7 +263,7 @@ async def start_draft(interaction: discord.Interaction,
     draft_channel: discord.TextChannel,
     min_time_limit: int = None
     ):
-    # permission check
+    #permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return
@@ -284,6 +290,17 @@ USER COMMANDS
     #1 mandatory parameter for team pick
 @bot.tree.command(name="pick", description="Reserve a Single Pick for your next turn")
 async def pick(interaction: discord.Interaction, team: str):
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    #check what channel this draft is affilliated with
+    for draft in drafts:
+        if drafts[draft].channel == drafter_channel:
+            #validate and make sure person is in the draft
+            if drafts[draft].validate_participant(drafter_id) == True:
+                #make the pick happen
+                drafts[draft].make_pick(drafter_id,team,drafts[draft].current_round)
+                #delete the pick from their queue
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them

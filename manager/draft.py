@@ -24,6 +24,7 @@ class Draft:
     #draft memory
     teams = []
     draft_data = []
+    current_round = 1 #the current round the draft is on
 
     #initilizer
     def __init__(self, name, rounds, limit):
@@ -72,3 +73,43 @@ class Draft:
             team = {"team": current_team, "picks_remaining":picks_remaining}
             self.teams.append(team)
         pass
+
+    #function to make sure the player is a valid participate in the draft
+    def validate_participant(self,player_id):
+        for player_data in self.draft_data:
+            if player_data["id"] == player_id:
+                return True
+        return False
+    
+    #function to add one team to a players queue
+    def pick_one(self):
+        pass
+
+    #function to add more teams to a players queue
+    def pick_multiple(self):
+        pass
+
+    #function to pick for a player from the queue (needs to be rewritten)
+    def make_pick(self,player_id,pick,pick_number):
+        #test functions
+        success = False
+        #make sure the pick is available
+        for team in self.teams:
+            if team["team"] == pick:
+                #team found
+                success = True
+                if team["picks_remaining"] == 0:
+                    success = False
+                #available for picking (go through the data manipulation process)
+                else:
+                    #set players round pick in 
+                    for player_data in self.draft_data:
+                        if player_data["id"] == player_id:
+                            #this is the right player, add the pick and -1 the picks remaining
+                            player_data[f"round_{pick_number}"] = pick
+                            print(f"[DRAFT] [FROM {self.draft_name.upper()}] {player_id} has picked {pick}!")
+                            team["picks_remaining"] -=1
+                        else:
+                            success = False
+        #return false if found is false, otherwise true
+        return False if (success == False) else True
