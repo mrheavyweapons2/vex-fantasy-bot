@@ -236,6 +236,7 @@ async def start_draft(interaction: discord.Interaction,
     draft_channel: discord.TextChannel,
     min_time_limit: int = None
     ):
+    await interaction.response.defer()
     #permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -256,7 +257,6 @@ async def start_draft(interaction: discord.Interaction,
     ]
     #generate the player data
     drafts[draft_object].generate_player_data(player_data)
-    await interaction.response.send_message(f"Draft Setup.")
     #send an initial message to the channel
     try:
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
@@ -264,10 +264,10 @@ async def start_draft(interaction: discord.Interaction,
         drafts[draft_object].channel = draft_channel
         print(f"{drafts[draft_object].draft_name} draft starting in {drafts[draft_object].channel}")
     except discord.Forbidden:
-        await interaction.response.send_message(f"Bot does not have access to that channel.",ephemeral=True)
+        await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return
     #respond to the user
-    await interaction.response.send_message(f"Command Not Yet Fully Implemented",ephemeral=True)
+    await interaction.followup.send(f"Draft Starting.")
 """
 USER COMMANDS
     -pick (reserves a single pick for the next turn)
@@ -289,8 +289,8 @@ async def pick(interaction: discord.Interaction, team: str):
             #validate and make sure person is in the draft
             if drafts[draft].validate_participant(drafter_id) == True:
                 #put the pick in their queue
-                drafts[draft].pick_one(drafter_id,team)
-    await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
+                completed = drafts[draft].pick_one(drafter_id,team)
+    await interaction.response.send_message("Team Chosen." if completed else "Error while getting team.",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
     #1 mandatory parameter for double picking teams

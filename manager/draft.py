@@ -81,9 +81,8 @@ class Draft:
                 return True
         return False
     
-    #function to pick for a player from the queue (needs to be rewritten)
-    def pick_one(self,player_id,pick):
-        #test functions
+    def validate_availability(self,pick):
+        #test startments
         success = False
         #make sure the pick is available
         for team in self.teams:
@@ -92,15 +91,21 @@ class Draft:
                 success = True
                 if team["picks_remaining"] == 0:
                     success = False
-                #available for picking (go through the data manipulation process)
+        return success
+
+    #function to pick for a player from the queue (needs to be rewritten)
+    def pick_one(self,player_id,pick):
+        #check if you can pick them
+        if self.validate_availability(pick):
+            success = True
+            #set players pick in the queue
+            for player_data in self.draft_data:
+                if player_data["id"] == player_id:
+                    player_data["queue_1"] = pick
+                    player_data["double_pick"] = False
+                    #wipe the other picks
                 else:
-                    #set players pick in the queue
-                    for player_data in self.draft_data:
-                        if player_data["id"] == player_id:
-                            player_data["queue_1"] = pick
-                            player_data["double_pick"] = False
-                        else:
-                            success = False
+                    success = False
         #return false if found is false, otherwise true
         return False if (success == False) else True
 
