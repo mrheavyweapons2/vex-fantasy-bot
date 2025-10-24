@@ -229,16 +229,18 @@ async def announce_draft(interaction: discord.Interaction,
         return
     await interaction.followup.send(f"Draft Announced.")
 
-#command to set up the player csv file
-@bot.tree.command(name="setup_draft", description="Creates a CSV file with everyone who reacted using the announcement emoji.")
-async def setup_draft(interaction: discord.Interaction,
-    draft_object: str
+#command to announce the draft
+@bot.tree.command(name="start_draft", description="Starts the Draft")
+async def start_draft(interaction: discord.Interaction,
+    draft_object: str,
+    draft_channel: discord.TextChannel,
+    min_time_limit: int = None
     ):
-    # permission check
+    #permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return
-    #get the emoji and announcement
+    #get the emoji and announcement from the announcement message
     aid, emoji, channel = drafts[draft_object].get_announcement_id()
     announcment = await channel.fetch_message(aid)
     #get all of the users who reacted
@@ -255,18 +257,6 @@ async def setup_draft(interaction: discord.Interaction,
     #generate the player data
     drafts[draft_object].generate_player_data(player_data)
     await interaction.response.send_message(f"Draft Setup.")
-
-#command to announce the draft
-@bot.tree.command(name="start_draft", description="Starts the Draft")
-async def start_draft(interaction: discord.Interaction,
-    draft_object: str,
-    draft_channel: discord.TextChannel,
-    min_time_limit: int = None
-    ):
-    #permission check
-    if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
     #send an initial message to the channel
     try:
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
