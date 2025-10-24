@@ -298,16 +298,15 @@ async def pick(interaction: discord.Interaction, team: str):
         if drafts[draft].channel == drafter_channel:
             #validate and make sure person is in the draft
             if drafts[draft].validate_participant(drafter_id) == True:
-                #make the pick happen
-                drafts[draft].make_pick(drafter_id,team,drafts[draft].current_round)
-                #delete the pick from their queue
+                #put the pick in their queue
+                drafts[draft].pick_one(drafter_id,team)
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
     #1 mandatory parameter for double picking teams
     #1 mandatory parameter for team pick
     #3 optional team pick parameters
-@bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams for the bot to automaticly pick for you")
+@bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams (max of 4)")
 async def reserve_picks(interaction: discord.Interaction,
     doublepick: bool,
     team1: str,
@@ -315,6 +314,7 @@ async def reserve_picks(interaction: discord.Interaction,
     team3: str = None,
     team4: str = None
     ):
+
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command that lets the user clear their list of picks

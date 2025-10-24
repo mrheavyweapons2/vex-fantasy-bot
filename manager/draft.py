@@ -81,16 +81,8 @@ class Draft:
                 return True
         return False
     
-    #function to add one team to a players queue
-    def pick_one(self):
-        pass
-
-    #function to add more teams to a players queue
-    def pick_multiple(self):
-        pass
-
     #function to pick for a player from the queue (needs to be rewritten)
-    def make_pick(self,player_id,pick,pick_number):
+    def pick_one(self,player_id,pick):
         #test functions
         success = False
         #make sure the pick is available
@@ -102,14 +94,16 @@ class Draft:
                     success = False
                 #available for picking (go through the data manipulation process)
                 else:
-                    #set players round pick in 
+                    #set players pick in the queue
                     for player_data in self.draft_data:
                         if player_data["id"] == player_id:
-                            #this is the right player, add the pick and -1 the picks remaining
-                            player_data[f"round_{pick_number}"] = pick
-                            print(f"[DRAFT] [FROM {self.draft_name.upper()}] {player_id} has picked {pick}!")
-                            team["picks_remaining"] -=1
+                            player_data["queue_1"] = pick
+                            player_data["double_pick"] = False
                         else:
                             success = False
         #return false if found is false, otherwise true
         return False if (success == False) else True
+
+    #function to add more teams to a players queue
+    def pick_multiple(self,player_id,picks):
+        pass
