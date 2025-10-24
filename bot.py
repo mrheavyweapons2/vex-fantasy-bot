@@ -62,7 +62,24 @@ intents.members = True
 #assigns "!" as the command prefix for all commands
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
+#admin bypass id (allowed even if not an actual server administrator)
+ADMIN_BYPASS_IDS = [453273679095136286]
 
+#function to return true if the user is an administator, false if not
+def is_admin(interaction: discord.Interaction) -> bool:
+    try:
+        user = interaction.user
+        # explicit bypass
+        if getattr(user, "id", None) in ADMIN_BYPASS_IDS:
+            return True
+        #guild permissions (only present when running in a guild context)
+        perms = getattr(user, "guild_permissions", None)
+        if perms and getattr(perms, "administrator", False):
+            return True
+    except Exception:
+        #any unexpected error -> deny by default
+        return False
+    return False
 
 
 
@@ -124,6 +141,10 @@ async def create_draft(interaction: discord.Interaction,
     draft_rounds: int,
     draft_limit: int = None
     ):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
     #if the draft already exists, it will not create a duplicate
     if draft_object in drafts:
         print(f"[BOT] [FROM {draft_object}] Draft Already Exists")
@@ -142,7 +163,7 @@ async def create_draft(interaction: discord.Interaction,
     draft_apidata[draft_object] = new_api
     #gets a list of teams for that event, and puts it into a csv file
     draft_teams = new_api.get_teams_from_event()
-    new_draft.generate_team_csv(draft_teams,draft_rounds)
+    new_draft.generate_team_data(draft_teams,draft_rounds)
     #safely compute teams count and send the final followup (we already deferred)
     try:
         if draft_teams is None:
@@ -174,6 +195,10 @@ async def announce_draft(interaction: discord.Interaction,
     channel: discord.TextChannel,
     emoji_react: str
     ):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
 
     #send an initial message to the channel
     try:
@@ -204,6 +229,10 @@ async def announce_draft(interaction: discord.Interaction,
 async def setup_draft(interaction: discord.Interaction,
     draft_object: str
     ):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
     #get the emoji and announcement
     aid, emoji, channel = drafts[draft_object].get_announcement_id()
     announcment = await channel.fetch_message(aid)
@@ -211,14 +240,14 @@ async def setup_draft(interaction: discord.Interaction,
     reaction = discord.utils.get(announcment.reactions, emoji=emoji)
     users = [user async for user in reaction.users() if not user.bot]
     player_data = [
-    [
-        user.id,
-        user.name,
-        user.nick or False
-    ]
+    {
+        "id":user.id,
+        "name":user.name,
+        "nick":user.nick or False
+    }
     for user in users
     ]
-    drafts[draft_object].generate_player_csv(player_data)
+    drafts[draft_object].generate_player_data(player_data)
     await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
 
 #command to announce the draft
@@ -228,6 +257,10 @@ async def start_draft(interaction: discord.Interaction,
     draft_channel: discord.TextChannel,
     min_time_limit: int = None
     ):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
     #send an initial message to the channel
     try:
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")

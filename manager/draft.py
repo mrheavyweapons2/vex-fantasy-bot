@@ -5,7 +5,6 @@ Author: Jeremiah Nairn
 Description: Holds all of the functionality for processing the drafts
 """
 
-
 #main class
 class Draft:
 
@@ -40,6 +39,7 @@ class Draft:
         self.announcement_id = id
         self.emoji = emoji
         self.announce_channel = channel
+        print(f'[DRAFT] [FROM {self.draft_name.upper()}] Draft Announced.')
 
     #function to get the announcement id and emoji from the draft
     def get_announcement_id(self):
@@ -48,8 +48,27 @@ class Draft:
 
     #function that takes a list of dicts containing playerdata
     def generate_player_data(self,player_data):
+        #for each player, turn them into an expanded dict and add them to the player list
+        for current_player in player_data:
+            #create the dict
+            player = {"id":current_player["id"], "user":current_player["name"],"name":current_player["nick"]} #user data
+            #add the extra data
+            for r in range(self.round_limit):
+                player[f"round_{r+1}"] = None
+            #add the rest
+            player["double_pick"] = False
+            for i in range(4):
+                player[f"queue_{i+1}"] = None
+            #add the player to the list
+            self.draft_data.append(player)
+        print(self.draft_data)
         pass
     
     #function to generate a list of dicts containing teams and how many picks they have
     def generate_team_data(self,team_data,picks_remaining):
+        #for each team, turn them into a dict and add them into a new list
+        for current_team in team_data:
+            #turn into dict and add to list
+            team = {"team": current_team, "picks_remaining":picks_remaining}
+            self.teams.append(team)
         pass
