@@ -49,62 +49,6 @@ import asyncio
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
 intents = discord.Intents.default()
-                            try:
-                                if getattr(draft_instance, "channel", None) is not None:
-    except Exception as e:
-        return
-    #creates the draft object
-"""
-File: bot.py
-Author: Jeremiah Nairn
-
-Description: This is a fantasy draft bot built specificly for vex and robotevents.
-"""
-
-"""
-CHECKLIST/ORDER OF COMPLETION
-MS 1: DRAFT REGISTRATION (COMPLETE)
-MS 2: PEOPLE DATA COLLECTION (COMPLETE)
-MS 3: AUTOMATE INITIAL DATA COLLECTION (COMPLETE)
-MS 4: MAIN DRAFT FUNCTIONALITY
-    -draft bot will create a thread to run through the draft depending on how many rounds
-    -
-MS 5: AUTOMATE DRAFT RESULTS
-    -when the draft is finished draft admins can send a command for the bot to compute the draft results based on parameters
-    -if the data is incomplete, it will error
-    -if not, it will send an image of the CSV data or send the file itself
-    -also will possibly just list the results in text
-MS 6: QUALITY OF LIFE CHANGES
-    -add an optional time limit for the bot to skip over people, skipped people can pick later but only at first come first serve
-    -automated draft results will be placed in a cleaner excel file to look better
-"""
-
-#import draft
-from manager import draft
-#import robotevents
-from manager import robotevents_handler
-
-#imports discord token from an encrypted .env file
-import os
-from dotenv import load_dotenv
-
-#load variables from .env file
-load_dotenv()
-DS_TOKEN = os.getenv("DISCORD_TOKEN")
-RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
-
-#discord imports
-import discord
-from discord import app_commands
-from discord.ext import commands
-
-#import other neccessary modules
-import time
-import threading
-import asyncio
-
-#setup intents (just message_content isn't needed for slash commands, but safe to keep)
-intents = discord.Intents.default()
 intents.reactions = True
 intents.messages = True
 intents.message_content = True
@@ -119,9 +63,14 @@ ADMIN_BYPASS_IDS = [453273679095136286]
 
 """
 HELPER FUNCTIONS
+    -send_message (sends a message in a channel)
     -is_admin (checks of the user is an admin)
     -validation_check(checks if the user is in the draft and in the correct channel)
 """
+
+#function to send a message in a channel
+async def send_message(message,draft_instance):
+    draft_instance.channel.send(message)
 
 #function to return true if the user is an administator, false if not
 def is_admin(interaction: discord.Interaction) -> bool:
@@ -139,57 +88,40 @@ def is_admin(interaction: discord.Interaction) -> bool:
         return False
     return False
 
-#function to validate if the user is allowed to run the command in the channel
-def validation_check(drafter_id, drafter_channel) -> tuple[bool, str | None]:
-    """
-    Determine whether a given user (drafter_id) is a participant in the draft
-    that is associated with the provided channel (drafter_channel).
-
-    Returns a tuple (passed: bool, draft_name: Optional[str]).
-    """
-    # iterate through drafts mapping to find the one for this channel
-    for draft_name, draft_obj in drafts.items():
-        # only consider drafts that have their channel configured
-        if draft_obj.channel is None:
-            continue
-        # channels may be compared by id to avoid object identity issues
-        try:
-            if getattr(draft_obj.channel, "id", draft_obj.channel) != getattr(drafter_channel, "id", drafter_channel):
-                continue
-        except Exception:
-            if draft_obj.channel != drafter_channel:
-                continue
-
-        # validate and make sure the person is in the draft
-        if draft_obj.validate_participant(drafter_id):
-            return True, draft_name
-
+#function to validate if the user is allowed to run the 
+def validation_check(drafter_id, drafter_channel) -> bool:
+    for draft in drafts:
+        if drafts[draft].channel == drafter_channel:
+            #validate and make sure person is in the draft
+            if drafts[draft].validate_participant(drafter_id) == True:
+                #code here
+                return True, draft
     return False, None
 
 #function to run the draft
-def run_draft(draft_instance):
+def run_draft(draft_instance,bot):
     #get the draft order
     drafters = draft_instance.draft_data
     print(f"[BOT] [FROM {draft_instance.draft_name}] Draft order is as follows:")
     #get drafters positions
     for drafter in drafters:
-        draft_instance.total_participants += 1
+        draft_instance.total_participants +=1
         drafter["position"] = draft_instance.total_participants
         print(drafter["name"], drafter["position"])
     reverse = 1
     #go through each round
-    for round_index in range(draft_instance.round_limit):
-        #goes through each position (0-based loop to match internal logic)
+    for round in range(draft_instance.round_limit):
+        #goes through each position
         for position in range(draft_instance.total_participants):
-            # update current position (this logic preserves the original intent)
-            draft_instance.current_position += (0 if position + 1 == draft_instance.total_participants else 1 * reverse)
+            draft_instance.current_position+= (0 if position+1 == draft_instance.total_participants else 1*reverse)
             #validate who is supposed to be up for this turn
             for drafter in drafters:
-                if drafter.get("position") == position:
+                if drafter["position"] == position+1:
+                    print(f"[BOT] [FROM {draft_instance.draft_name}] {position+1} Is Up")
                     #debouncer
                     debounce = True
                     #check and see if their queue can be processed
-                    while draft_instance.process_pick(position):
+                    while not draft_instance.process_pick(position+1):
                         # ping who is up, who is on deck, and who is in the hole (only once per turn)
                         if debounce:
                             debounce = False
@@ -208,14 +140,18 @@ def run_draft(draft_instance):
                                     in_hole = f"<@{ordered[(current_idx + 2) % len(ordered)].get('id')}>"
 
                                 msg = f"Now up: {now_up}\nOn deck: {on_deck}\nIn the hole: {in_hole}"
+                                print(msg)
                                 # schedule the send on the bot event loop from this worker thread
                                 if getattr(draft_instance, "channel", None) is not None:
-                                    asyncio.run_coroutine_threadsafe(draft_instance.channel.send(msg), bot.loop)
+                                    asyncio.run_coroutine_threadsafe(
+                                        draft_instance.channel.send(msg),
+                                        draft_instance.bot.loop
+                                    )
                             except Exception as e:
                                 print(f"[BOT] Error sending draft ping: {e}")
                         time.sleep(1)
-    reverse = reverse * -1
-
+                    pass
+        reverse = reverse*-1
 
 #dictionary to store drafts
 drafts = {} # key: draft_name, value: draft instance
@@ -339,7 +275,6 @@ async def announce_draft(interaction: discord.Interaction,
         #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
         await interaction.response.defer()
         announcement = await channel.send(f"The {drafts[draft_object].draft_name} draft is being announced! React with {emoji_react} to enter!")
-        print("message printed (bogos binted)")
         try:
             await announcement.add_reaction(emoji_react)
 
@@ -357,33 +292,6 @@ async def announce_draft(interaction: discord.Interaction,
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return
     await interaction.followup.send(f"Draft Announced.")
-
-#command to set up the player csv file
-@bot.tree.command(name="setup_draft", description="Creates a CSV file with everyone who reacted using the announcement emoji.")
-async def setup_draft(interaction: discord.Interaction,
-    draft_object: str
-    ):
-    # permission check
-    if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
-    #get the emoji and announcement
-    aid, emoji, channel = drafts[draft_object].get_announcement_id()
-    announcment = await channel.fetch_message(aid)
-    #get all of the users who reacted
-    reaction = discord.utils.get(announcment.reactions, emoji=emoji)
-    users = [user async for user in reaction.users() if not user.bot]
-    player_data = [
-    {
-        "id":user.id,
-        "name":user.name,
-        "nick":user.nick or False
-    }
-    for user in users
-    ]
-    #generate the player data
-    drafts[draft_object].generate_player_data(player_data)
-    await interaction.response.send_message(f"Draft Setup.")
 
 #command to announce the draft
 @bot.tree.command(name="start_draft", description="Starts the Draft")
@@ -419,7 +327,7 @@ async def start_draft(interaction: discord.Interaction,
         #set the drafts communcations channel to the proper one
         drafts[draft_object].channel = draft_channel
         #start the thread
-        thread_instance = threading.Thread(target=run_draft, args=(drafts[draft_object],), daemon=True)
+        thread_instance = threading.Thread(target=run_draft, args=(drafts[draft_object],bot), daemon=True)
         thread_instance.start()
     except discord.Forbidden:
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
@@ -429,7 +337,7 @@ async def start_draft(interaction: discord.Interaction,
 """
 USER COMMANDS
     -pick (reserves a single pick for the next turn)
-    -reserve_picks (reserves multiple picks so the bot can automatically pick for it)
+    -reserve_picks (reserves multiple picks so the bot can automatically pick from it)
     -clear_pick (clears the picks from the user)
     -draft_status (checks the status of the current draft)
 """
@@ -506,7 +414,7 @@ async def clear_picks(interaction: discord.Interaction):
 #command that shows the user their current picks
 @bot.tree.command(name="show_picks", description="Shows your current picks")
 async def show_picks(interaction: discord.Interaction):
-    #get what channel command was sent, and the user id
+    #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel
     passed,draft = validation_check(drafter_id,drafter_channel)
