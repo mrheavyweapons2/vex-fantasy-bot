@@ -17,6 +17,7 @@ class Draft:
     announce_channel = None #what channel the announcement was sat in
     announcement_id = None #the message ID for the announcement
     emoji = None #what emoji was used to react to the announcement
+    bot = None
     total_participants = 0
 
     #directory data
@@ -26,14 +27,15 @@ class Draft:
     teams = []
     draft_data = []
     current_round = 0 #the current round the draft is on
-    current_position = 1 #the current position the draft is on
+    current_position = 0 #the current position the draft is on
 
     #initilizer
-    def __init__(self, name, rounds, limit):
+    def __init__(self, name, rounds, limit, bot):
         #get our unique instance values from the initialization
         self.draft_name = name
         self.round_limit = rounds
         self.people_limit = limit
+        self.bot = bot
         #print to the console
         print(f'[DRAFT] [FROM {name.upper()}] Draft Created.')
 
@@ -132,6 +134,8 @@ class Draft:
                         player_data["double_pick"] = False
                         #print check to console
                         print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
+                        success = True
+                        break
                     else:
                         success = False
         #return false if found is false, otherwise true
@@ -168,9 +172,9 @@ class Draft:
         player_data = next((pd for pd in self.draft_data if pd.get("position") == position), None)
         if player_data is None:
             return False
-
-        round_index = self.current_round + 1
-        round_field = f"round_{round_index}"
+        
+        self.current_round + 1
+        round_field = f"round_{self.current_round}"
 
         # loop until we consume a valid pick or there are no picks left
         while True:
@@ -209,5 +213,5 @@ class Draft:
             # reset double_pick flag since a pick was consumed
             player_data["double_pick"] = False
 
-            print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} picked {pick} for round {round_index}')
+            print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} picked {pick} for Round {self.current_round}')
             return True

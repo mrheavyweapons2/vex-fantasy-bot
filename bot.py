@@ -63,14 +63,9 @@ ADMIN_BYPASS_IDS = [453273679095136286]
 
 """
 HELPER FUNCTIONS
-    -send_message (sends a message in a channel)
     -is_admin (checks of the user is an admin)
     -validation_check(checks if the user is in the draft and in the correct channel)
 """
-
-#function to send a message in a channel
-async def send_message(message,draft_instance):
-    draft_instance.channel.send(message)
 
 #function to return true if the user is an administator, false if not
 def is_admin(interaction: discord.Interaction) -> bool:
@@ -111,13 +106,15 @@ def run_draft(draft_instance,bot):
     reverse = 1
     #go through each round
     for round in range(draft_instance.round_limit):
+        #increases the round
+        draft_instance.current_round +=1
         #goes through each position
         for position in range(draft_instance.total_participants):
             draft_instance.current_position+= (0 if position+1 == draft_instance.total_participants else 1*reverse)
             #validate who is supposed to be up for this turn
             for drafter in drafters:
-                if drafter["position"] == position+1:
-                    print(f"[BOT] [FROM {draft_instance.draft_name}] {position+1} Is Up")
+                if drafter["position"] == draft_instance.current_position:
+                    print(f"[BOT] [FROM {draft_instance.draft_name}] {draft_instance.current_position} Is Up")
                     #debouncer
                     debounce = True
                     #check and see if their queue can be processed
@@ -140,7 +137,6 @@ def run_draft(draft_instance,bot):
                                     in_hole = f"<@{ordered[(current_idx + 2) % len(ordered)].get('id')}>"
 
                                 msg = f"Now up: {now_up}\nOn deck: {on_deck}\nIn the hole: {in_hole}"
-                                print(msg)
                                 # schedule the send on the bot event loop from this worker thread
                                 if getattr(draft_instance, "channel", None) is not None:
                                     asyncio.run_coroutine_threadsafe(
@@ -224,7 +220,7 @@ async def create_draft(interaction: discord.Interaction,
         print(f"[BOT] [FROM {draft_object}] Invalid Amount of Rounds")
         return
     #creates the draft object
-    new_draft = draft.Draft(draft_object, draft_rounds, draft_limit)
+    new_draft = draft.Draft(draft_object, draft_rounds, draft_limit, bot)
     drafts[draft_object] = new_draft
     #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
     await interaction.response.defer()
@@ -355,8 +351,10 @@ async def pick(interaction: discord.Interaction, team: str):
     passed,draft = validation_check(drafter_id,drafter_channel)
     if passed:
         #put the pick in their queue
-        completed = drafts[draft].pick_one(drafter_id,team)
-        await interaction.response.send_message(f"{team} Chosen." if completed else "Team or Player does not exist.",ephemeral=True)
+        if drafts[draft].pick_one(drafter_id,team):
+            await interaction.response.send_message(f"{team} Chosen.")
+        else:
+            await interaction.response.send_message(f"{team} Does Not Exist.")
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
