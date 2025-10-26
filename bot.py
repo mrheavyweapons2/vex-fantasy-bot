@@ -393,7 +393,6 @@ async def pick(interaction: discord.Interaction, team: str):
     #3 optional team pick parameters
 @bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams (max of 4)")
 async def reserve_picks(interaction: discord.Interaction,
-    doublepick: bool,
     team1: str,
     team2: str = None,
     team3: str = None,
@@ -416,7 +415,7 @@ async def reserve_picks(interaction: discord.Interaction,
     passed,draft = validation_check(drafter_id,drafter_channel)
     if passed:
         #put the pick in their queue
-        completed = drafts[draft].pick_multiple(drafter_id,picks,doublepick)
+        completed = drafts[draft].pick_multiple(drafter_id,picks)
         await interaction.response.send_message(f"{picks} Chosen." if completed else "Teams or Player does not exist.",ephemeral=True)
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
@@ -438,8 +437,8 @@ async def clear_picks(interaction: discord.Interaction):
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
-@bot.tree.command(name="get_picks", description="Gets what current picks you have.")
-async def get_picks(interaction: discord.Interaction):
+@bot.tree.command(name="get_my_picks", description="Gets what current picks you have.")
+async def get_my_picks(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel
@@ -449,8 +448,8 @@ async def get_picks(interaction: discord.Interaction):
         #code here
         picks = drafts[draft].get_picks(drafter_id)
         await interaction.response.send_message(f"Your current picks are {picks}.")
+        return
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
-
 
 #command that shows the user their current picks
 @bot.tree.command(name="get_queue", description="Shows your current picks that are in queue.")
@@ -462,7 +461,7 @@ async def get_queue(interaction: discord.Interaction):
     if passed:
         #get the picks
         picks = drafts[draft].get_queue(drafter_id)
-        await interaction.response.send_message(f"You have Picked {picks}",ephemeral=True)
+        await interaction.response.send_message(f"You have Picked {picks}")
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 

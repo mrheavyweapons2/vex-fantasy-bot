@@ -70,8 +70,7 @@ class Draft:
             #add the extra data
             for r in range(self.round_limit):
                 player[f"round_{r+1}"] = None
-            #add the rest
-            player["double_pick"] = False
+            #add the queue spots
             for i in range(4):
                 player[f"queue_{i+1}"] = None
             #give the player a position
@@ -142,7 +141,7 @@ class Draft:
         return success
 
     #function to add more teams to a players queue
-    def pick_multiple(self, player_id, picks, doublepick):
+    def pick_multiple(self, player_id, picks):
         success = False
         #clear the picks
         if self.clear_picks(player_id):
@@ -159,7 +158,6 @@ class Draft:
                     continue
                 #set player's queue slot (1-based) and double_pick flag
                 player_data[f"queue_{assigned+1}"] = pick
-                player_data["double_pick"] = doublepick
                 #log and mark success
                 print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
                 success = True
