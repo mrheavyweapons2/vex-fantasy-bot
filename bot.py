@@ -465,18 +465,5 @@ async def get_queue(interaction: discord.Interaction):
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
-#command to tell people whos currently supposed to be picking
-@bot.tree.command(name="whos_up", description="Tells the user who is currently supposed to be picking.")
-async def whos_up(interaction: discord.Interaction):
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
-    passed,draft = validation_check(drafter_id,drafter_channel)
-    if passed:
-        #code here
-        await interaction.response.send_message(f"Command Not Yet Implemented",ephemeral=True)
-        return    
-    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
-
 #runs the bot on the token
 bot.run(DS_TOKEN)
