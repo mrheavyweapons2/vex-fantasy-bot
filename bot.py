@@ -216,16 +216,17 @@ async def bear(interaction: discord.Interaction):
 async def get_teams(interaction: discord.Interaction,
     sku: str
     ):
+    await interaction.response.defer()
     rbh = robotevents_handler.Robotevent("get_teams_command",sku, RB_TOKEN)
     teams = rbh.get_teams_from_event()
-    await interaction.response.send_message(f"{teams}")
+    await interaction.followup.send(f"{teams}")
 
 """
 ADMIN COMMANDS
     -create_draft (creates the draft, and its dedicated directory)
     -announce_draft (announces the draft and opens it for people to enter)
-    -setup_draft (creates and obtains the last bit of data needed for the draft to function)
-    -start_draft (starts the draft for everyone to start picking)
+    -start_draft (starts the draft for everyone to star/get picking)
+    -get_all_picks (returns a csv file for entire draft)
 """
 
 #command that creates the draft
@@ -359,6 +360,32 @@ async def start_draft(interaction: discord.Interaction,
         return
     #respond to the user
     await interaction.followup.send(f"Draft Starting.")
+
+#command to announce the draft
+@bot.tree.command(name="get_pick_csv", description="Returns a csv file for the draft")
+async def announce_draft(interaction: discord.Interaction,
+    draft_object: str,
+    channel: discord.TextChannel,
+    emoji_react: str
+    ):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+
+    #send an initial message to the channel
+    try:
+        #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+        await interaction.response.defer()
+        
+        #send the emoji in that channel
+        print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] Draft announced in {channel}")
+    #if theres a channel restriction
+    except discord.Forbidden:
+        await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
+        return
+    await interaction.followup.send(f"Draft Announced.")
+
 """
 USER COMMANDS
     -pick (reserves a single pick for the next turn)

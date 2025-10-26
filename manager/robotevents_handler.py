@@ -52,17 +52,18 @@ class Robotevent:
         #get the list of teams
         teams = []
         #json request parameters
-        url = f"{BASE_URL}/events/{self.event_id}/teams"
-        headers = {
-            "Authorization": f"Bearer {self.api_token}",
-            "Accept": "application/json"
-            }
-        #request the data
-        response = requests.get(url, headers=headers)
-        data = response.json()
-        #extract team numbers
-        teams = [team["number"] for team in data.get("data", [])]
-        print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}")
+        for page in range(5):
+            url = f"{BASE_URL}/events/{self.event_id}/teams?page={page+1}"
+            headers = {
+                "Authorization": f"Bearer {self.api_token}",
+                "Accept": "application/json"
+                }
+            #request the data
+            response = requests.get(url, headers=headers)
+            data = response.json()
+            #extract team numbers
+            teams += [team["number"] for team in data.get("data", [])]
+            print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}, page {page+1}")
         #return the teams
         return teams
 
