@@ -46,6 +46,8 @@ from discord.ext import commands
 import time
 import threading
 import asyncio
+import csv
+import tempfile
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
 intents = discord.Intents.default()
@@ -65,6 +67,7 @@ ADMIN_BYPASS_IDS = [453273679095136286]
 HELPER FUNCTIONS
     -is_admin (checks of the user is an admin)
     -validation_check(checks if the user is in the draft and in the correct channel)
+    -run_draft (runs the main draft for picking teams)
 """
 
 #function to return true if the user is an administator, false if not
@@ -110,7 +113,6 @@ def run_draft(draft_instance,bot):
         draft_instance.current_round +=1
         #goes through each position
         for position in range(draft_instance.total_participants):
-            draft_instance.current_position+= (0 if position+1 == draft_instance.total_participants else 1*reverse)
             #validate who is supposed to be up for this turn
             for drafter in drafters:
                 if drafter["position"] == draft_instance.current_position:
@@ -118,25 +120,46 @@ def run_draft(draft_instance,bot):
                     #debouncer
                     debounce = True
                     #check and see if their queue can be processed
-                    while not draft_instance.process_pick(position+1):
+                    while not draft_instance.process_pick(draft_instance.current_position):
                         # ping who is up, who is on deck, and who is in the hole (only once per turn)
                         if debounce:
                             debounce = False
                             try:
-                                # build an ordered list by draft position
-                                ordered = sorted(drafters, key=lambda d: d.get("position", 0))
-                                # find current drafter index in ordered list
-                                current_idx = next((i for i, p in enumerate(ordered) if p.get("id") == drafter.get("id")), None)
-                                if current_idx is None:
-                                    now_up = f"<@{drafter.get('id')}>"
-                                    on_deck = ""
-                                    in_hole = ""
+                                #map positions to drafter ids
+                                pos_map = {d.get("position"): d.get("id") for d in drafters}
+                                total = draft_instance.total_participants or len(pos_map)
+                                curr = draft_instance.current_position
+                                direction = reverse  # 1 for forward, -1 for backward
+                                #helper to safely mention a position
+                                def mention_for_pos(p):
+                                    _id = pos_map.get(p)
+                                    return f"<@{_id}>" if _id else ""
+                                #compute next two pick positions using the same increment logic as the loop
+                                if position + 1 == total:
+                                    # we're at the end of the current pass: next pick is the same position (start of next pass),
+                                    # then one position inward from the end on the next pass
+                                    next1_pos = curr
+                                    next2_pos = curr - 1 if total > 1 else curr
                                 else:
-                                    now_up = f"<@{ordered[current_idx].get('id')}>"
-                                    on_deck = f"<@{ordered[(current_idx + 1) % len(ordered)].get('id')}>"
-                                    in_hole = f"<@{ordered[(current_idx + 2) % len(ordered)].get('id')}>"
+                                    #normal case: next is current + direction
+                                    next1_pos = curr + direction
+                                    #if the following index would be the last in this pass, the pick after next1 will be the same (start of next pass)
+                                    if position + 2 == total:
+                                        next2_pos = next1_pos
+                                    else:
+                                        next2_pos = next1_pos + direction
+                                #clamp positions to valid range [1, total]
+                                def clamp(p):
+                                    if p is None: 
+                                        return None
+                                    return max(1, min(total, p))
+                                next1_pos = clamp(next1_pos)
+                                next2_pos = clamp(next2_pos)
+                                now_up = mention_for_pos(curr)
+                                on_deck = mention_for_pos(next1_pos)
+                                in_hole = mention_for_pos(next2_pos)
 
-                                msg = f"Now up: {now_up}\nOn deck: {on_deck}\nIn the hole: {in_hole}"
+                                msg = f"UP NOW: {now_up}\nON DECK: {on_deck}\nIN THE HOLE: {in_hole}"
                                 # schedule the send on the bot event loop from this worker thread
                                 if getattr(draft_instance, "channel", None) is not None:
                                     asyncio.run_coroutine_threadsafe(
@@ -147,7 +170,13 @@ def run_draft(draft_instance,bot):
                                 print(f"[BOT] Error sending draft ping: {e}")
                         time.sleep(1)
                     pass
+            draft_instance.current_position += (0 if position+1 == draft_instance.total_participants else 1*reverse)
         reverse = reverse*-1
+    #print that the draft has finished
+    asyncio.run_coroutine_threadsafe(
+        draft_instance.channel.send("Draft has Finished."),
+        draft_instance.bot.loop
+    )
 
 #dictionary to store drafts
 drafts = {} # key: draft_name, value: draft instance
@@ -393,7 +422,7 @@ async def reserve_picks(interaction: discord.Interaction,
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
 #command that lets the user clear their list of picks
-@bot.tree.command(name="clear_picks", description="Clears any picks that you currently have.")
+@bot.tree.command(name="clear_picks", description="Clears any picks that you currently have in queue.")
 async def clear_picks(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
@@ -409,9 +438,23 @@ async def clear_picks(interaction: discord.Interaction):
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
+@bot.tree.command(name="get_picks", description="Gets what current picks you have.")
+async def get_picks(interaction: discord.Interaction):
+    #get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    #check what channel this draft is affilliated with
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #code here
+        picks = drafts[draft].get_picks(drafter_id)
+        await interaction.response.send_message(f"Your current picks are {picks}.")
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
+
+
 #command that shows the user their current picks
-@bot.tree.command(name="show_picks", description="Shows your current picks")
-async def show_picks(interaction: discord.Interaction):
+@bot.tree.command(name="get_queue", description="Shows your current picks that are in queue.")
+async def get_queue(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel

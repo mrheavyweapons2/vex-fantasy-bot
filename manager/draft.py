@@ -27,7 +27,7 @@ class Draft:
     teams = []
     draft_data = []
     current_round = 0 #the current round the draft is on
-    current_position = 0 #the current position the draft is on
+    current_position = 1 #the current position the draft is on
 
     #initilizer
     def __init__(self, name, rounds, limit, bot):
@@ -215,3 +215,14 @@ class Draft:
 
             print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} picked {pick} for Round {self.current_round}')
             return True
+        
+    #function return a players picks
+    def get_picks(self,player_id):
+        #find the players entry in the list
+        for player_data in self.draft_data:
+            if player_data["id"] == player_id:
+                #make an empty list, and add all of the picks to it
+                picks = []
+                for r in range(self.round_limit):
+                    picks.append(player_data[f"round_{r+1}"])
+                return picks
