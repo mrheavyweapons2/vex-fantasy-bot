@@ -362,11 +362,9 @@ async def start_draft(interaction: discord.Interaction,
     await interaction.followup.send(f"Draft Starting.")
 
 #command to announce the draft
-@bot.tree.command(name="get_pick_csv", description="Returns a csv file for the draft")
-async def announce_draft(interaction: discord.Interaction,
+@bot.tree.command(name="get_csv_file", description="Returns a csv file for the draft")
+async def get_csv_file(interaction: discord.Interaction,
     draft_object: str,
-    channel: discord.TextChannel,
-    emoji_react: str
     ):
     # permission check
     if not is_admin(interaction):
@@ -377,14 +375,52 @@ async def announce_draft(interaction: discord.Interaction,
     try:
         #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
         await interaction.response.defer()
-        
+        draft_instance = drafts.get(draft_object)
+        if not draft_instance:
+            await interaction.followup.send("Draft does not exist.", ephemeral=True)
+            return
+
+        #gather and sort drafters by position
+        drafters = getattr(draft_instance, "draft_data", []) or []
+        sorted_drafters = sorted(drafters, key=lambda x: x.get("position", float("inf")))
+
+        #write CSV to a temporary file
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode="w", newline="", encoding="utf-8")
+        writer = csv.writer(tmp)
+        #get the template row
+
+        writer.writerow(["position", "id", "name", "picks"])
+
+        for drafter in sorted_drafters:
+            #get the position, name, and id
+            pos = drafter.get("position", "")
+            did = drafter.get("id", "")
+            name = drafter.get("name", "")
+            #use draft_instance.get_picks to retrieve picks for that drafter
+            try:
+                picks = draft_instance.get_picks(did)
+                for pick in picks:
+                    pick = str(pick)
+            except Exception:
+                picks = None
+            row = [pos ,did ,name]
+            row.extend(picks)
+            writer.writerow(row)
+
+        tmp.flush()
+        tmp.close()
+
+        # Send the file and clean up
+        with open(tmp.name, "rb") as fp:
+            await interaction.followup.send(file=discord.File(fp, filename=f"{draft_object}_picks.csv"))
+        os.remove(tmp.name)
         #send the emoji in that channel
-        print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] Draft announced in {channel}")
+        print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] CSV File Sent.")
     #if theres a channel restriction
     except discord.Forbidden:
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return
-    await interaction.followup.send(f"Draft Announced.")
+    await interaction.followup.send(f"CSV File Sent.")
 
 """
 USER COMMANDS
@@ -489,6 +525,23 @@ async def get_queue(interaction: discord.Interaction):
         #get the picks
         picks = drafts[draft].get_queue(drafter_id)
         await interaction.response.send_message(f"You have Picked {picks}")
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
+
+#command that shows the user all of the available picks
+@bot.tree.command(name="get_available_picks", description="Tells user what picks they have available.")
+async def get_available_picks(interaction: discord.Interaction):
+#get what channel command was sent in, and the user id
+    drafter_id = interaction.user.id
+    drafter_channel = interaction.channel
+    passed,draft = validation_check(drafter_id,drafter_channel)
+    if passed:
+        #get all of the available picks and send them
+        team_msg = "The Current Teams Are:\n"
+        for team in drafts[draft].teams:
+            team_msg += f"{team["team"]}, {team["picks_remaining"]} Picks Remaining\n" if team["picks_remaining"] != 0 else ""
+        #send this monster of a message
+        await interaction.response.send_message(team_msg,ephemeral=True)
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
