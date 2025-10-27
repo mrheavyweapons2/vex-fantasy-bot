@@ -12,13 +12,12 @@ class Draft:
     draft_name = None #name of the draft
     people_limit = None #maximum number of people
     round_limit = None #number of rounds to be played
-    time_limit_min = None #amount of time before the person is skipped
     channel = None #what channel the current draft should be operated in
     announce_channel = None #what channel the announcement was sat in
     announcement_id = None #the message ID for the announcement
     emoji = None #what emoji was used to react to the announcement
     bot = None
-    total_participants = 0
+    total_participants = 0 #the total number of participants in the draft
 
     #directory data
     draft_dir = None
@@ -28,6 +27,8 @@ class Draft:
     draft_data = []
     current_round = 0 #the current round the draft is on
     current_position = 1 #the current position the draft is on
+    time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
+    skip_check = False #will skip the current persons turn if set to true
 
     #initilizer
     def __init__(self, name, rounds, limit, bot):

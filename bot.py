@@ -36,6 +36,8 @@ from dotenv import load_dotenv
 load_dotenv()  
 DS_TOKEN = os.getenv("DISCORD_TOKEN")
 RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
+ADMIN_BYPASS_IDS = os.getenv("ADMIN_BYPASS_IDS").split(",")
+
 
 #discord imports
 import discord
@@ -59,9 +61,6 @@ intents.members = True
 
 #assigns "!" as the command prefix for all commands
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
-
-#admin bypass id (allowed even if not an actual server administrator)
-ADMIN_BYPASS_IDS = [453273679095136286]
 
 """
 HELPER FUNCTIONS
@@ -116,11 +115,15 @@ def run_draft(draft_instance,bot):
             #validate who is supposed to be up for this turn
             for drafter in drafters:
                 if drafter["position"] == draft_instance.current_position:
-                    print(f"[BOT] [FROM {draft_instance.draft_name}] {draft_instance.current_position} Is Up")
                     #debouncer
                     debounce = True
                     #check and see if their queue can be processed
                     while not draft_instance.process_pick(draft_instance.current_position):
+                        #check if skip has been requested
+                        if draft_instance.skip_check:
+                            draft_instance.skip_check = False
+                            print(f"[BOT] [FROM {draft_instance.draft_name}] Turn Skipped.")
+                            break
                         # ping who is up, who is on deck, and who is in the hole (only once per turn)
                         if debounce:
                             debounce = False
@@ -177,6 +180,8 @@ def run_draft(draft_instance,bot):
         draft_instance.channel.send("Draft has Finished."),
         draft_instance.bot.loop
     )
+    #unbound the channel and reopen it for future drafts
+    draft_instance.channel = None
 
 #dictionary to store drafts
 drafts = {} # key: draft_name, value: draft instance
@@ -227,6 +232,7 @@ ADMIN COMMANDS
     -announce_draft (announces the draft and opens it for people to enter)
     -start_draft (starts the draft for everyone to star/get picking)
     -get_all_picks (returns a csv file for entire draft)
+    -skip (skips the current persons turn)
 """
 
 #command that creates the draft
@@ -422,18 +428,50 @@ async def get_csv_file(interaction: discord.Interaction,
         return
     await interaction.followup.send(f"CSV File Sent.")
 
+#command to skip the current persons turn
+@bot.tree.command(name="skip_turn", description="Skips the current drafters turn")
+async def skip_turn(interaction: discord.Interaction):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+
+    #send an initial message to the channel
+    try:
+        #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+        await interaction.response.defer()
+        #validate what channel this draft is affilliated with, and set the skip check to true
+        for draft in drafts:
+            if drafts[draft].channel == interaction.channel:
+                #get the current position, and the drafter id assigned
+                current_position = drafts[draft].current_position
+                for drafter in drafts[draft].draft_data:
+                    if drafter["position"] == current_position:
+                        drafter_id = drafter["id"]
+                #update the skip check
+                drafts[draft].skip_check = True
+                print(f"[BOT] [FROM {drafts[draft].draft_name.upper()}] Requesting Turn Skip.")
+                await interaction.followup.send(f"Skipping <@{drafter_id}>.")
+                return
+    #if theres a channel restriction
+    except discord.Forbidden:
+        await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
+        return
+    await interaction.followup.send(f"Error.",ephemeral=True)
+
 """
 USER COMMANDS
-    -pick (reserves a single pick for the next turn)
-    -reserve_picks (reserves multiple picks so the bot can automatically pick from it)
-    -clear_pick (clears the picks from the user)
-    -draft_status (checks the status of the current draft)
+    -quick_pick (reserves a single pick for the next turn)
+    -queue_picks (reserves multiple picks so the bot can automatically pick from it)
+    -clear_picks (clears the picks from the user)
+    -get_my_queue (shows the user their current queue of picks)
+    -get_available_picks (shows the user all of the available picks)
 """
 
 #command that lets the user pick one bot
     #1 mandatory parameter for team pick
-@bot.tree.command(name="pick", description="Reserve a Single Pick for your next turn")
-async def pick(interaction: discord.Interaction, team: str):
+@bot.tree.command(name="quick_pick", description="Reserve a single pick for your next turn")
+async def quick_pick(interaction: discord.Interaction, team: str):
     #upper the pick
     team = team.upper()
     #get what channel command was sent in, and the user id
@@ -454,8 +492,8 @@ async def pick(interaction: discord.Interaction, team: str):
     #1 mandatory parameter for double picking teams
     #1 mandatory parameter for team pick
     #3 optional team pick parameters
-@bot.tree.command(name="reserve_picks", description="Lets you select a multitude of teams (max of 4)")
-async def reserve_picks(interaction: discord.Interaction,
+@bot.tree.command(name="queue_picks", description="Lets you select a multitude of teams (max of 4) to be queued")
+async def queue_picks(interaction: discord.Interaction,
     team1: str,
     team2: str = None,
     team3: str = None,
@@ -515,8 +553,8 @@ async def get_my_picks(interaction: discord.Interaction):
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
 #command that shows the user their current picks
-@bot.tree.command(name="get_queue", description="Shows your current picks that are in queue.")
-async def get_queue(interaction: discord.Interaction):
+@bot.tree.command(name="get_my_queue", description="Shows your current picks that are in your queue.")
+async def get_my_queue(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     drafter_id = interaction.user.id
     drafter_channel = interaction.channel
