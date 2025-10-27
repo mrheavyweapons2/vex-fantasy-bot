@@ -102,12 +102,8 @@ def validation_check(drafter_id, drafter_channel) -> bool:
 def run_draft(draft_instance,bot):
     #get the draft order
     drafters = draft_instance.draft_data
-    print(f"[BOT] [FROM {draft_instance.draft_name}] Draft order is as follows:")
-    #get drafters positions
-    for drafter in drafters:
-        draft_instance.total_participants +=1
-        drafter["position"] = draft_instance.total_participants
-        print(drafter["name"], drafter["position"])
+    #set the draft order
+    draft_instance.set_draft_order()
     reverse = 1
     #go through each round
     for round in range(draft_instance.round_limit):
@@ -206,7 +202,30 @@ async def on_ready():
         print(f"[BOT] Synced {len(synced)} command(s)")
     except Exception as e:
         print(f"[BOT] Error syncing commands: {e}")
-
+    #load the drafts from saved data
+    with open ("drafts.csv", "r", newline='',encoding="utf-8") as draft_savefile:
+        #helper function that turns "" into None
+        def value_check(value):
+            return None if value == "" else value
+        #declare the reader and go through each line
+        reader = csv.reader(draft_savefile)
+        for row in reader:
+            draft_name = row[0]
+            print(draft_name)
+            draft_rounds = value_check(row[2])
+            draft_limit = value_check(row[1])
+            draft_sku = value_check(row[7])
+            #creates the draft object
+            new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, bot)
+            drafts[draft_name] = new_draft
+            #creates the robotevents object
+            new_api = robotevents_handler.Robotevent(draft_name,draft_sku, RB_TOKEN)
+            draft_apidata[draft_name] = new_api
+            #saves the draft id for future reference
+            new_draft.draft_sku = new_api.get_event_id()
+            #generates the team data
+            draft_teams = new_api.get_teams_from_event()
+            new_draft.generate_team_data(draft_teams,draft_rounds)
 
 """
 MISC AND TEST COMMANDS
@@ -263,11 +282,13 @@ async def create_draft(interaction: discord.Interaction,
     drafts[draft_object] = new_draft
     #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
     await interaction.response.defer()
+    #save the sku to the draft
+    new_draft.draft_sku = draft_sku
     #creates the robotevents object
     new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
     draft_apidata[draft_object] = new_api
-    #gets a list of teams for that event, and puts it into a csv file
-    draft_teams = new_api.get_teams_from_event()
+    #saves the draft id for future reference
+    new_draft.draft_sku = new_api.get_event_id()
     new_draft.generate_team_data(draft_teams,draft_rounds)
     #safely compute teams count and send the final followup (we already deferred)
     try:
@@ -281,7 +302,7 @@ async def create_draft(interaction: discord.Interaction,
             teams_count = len(draft_teams)
     except Exception:
         teams_count = 0
-
+    #send the draft creation confirmation
     msg = (
         f'Draft "{draft_object}" created successfully!\n'
         f'Rounds: {draft_rounds}\n'
@@ -290,8 +311,9 @@ async def create_draft(interaction: discord.Interaction,
         f'Event SKU: {draft_sku}\n'
         f'Limit: {draft_limit}'
     )
-
     await interaction.followup.send(msg)
+    #save the draft as is
+    new_draft.save_draft()
 
 #command to announce the draft
 @bot.tree.command(name="announce_draft", description="Announces the Draft and opens it for people to enter")
@@ -322,6 +344,8 @@ async def announce_draft(interaction: discord.Interaction,
         drafts[draft_object].log_announcement(announcement.id,emoji_react,channel)
         #send the emoji in that channel
         print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] Draft announced in {channel}")
+        #save the draft
+        drafts[draft_object].save_draft()
     #if theres a channel restriction
     except discord.Forbidden:
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)

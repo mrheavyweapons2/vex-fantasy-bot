@@ -5,6 +5,10 @@ Author: Jeremiah Nairn
 Description: Holds all of the functionality for processing the drafts
 """
 
+#importing csv for a savedata file
+import csv
+import os
+
 #main class
 class Draft:
 
@@ -17,7 +21,7 @@ class Draft:
     announcement_id = None #the message ID for the announcement
     emoji = None #what emoji was used to react to the announcement
     bot = None
-    total_participants = 0 #the total number of participants in the draft
+    draft_sku = None #the robotevents ID for the draft
 
     #directory data
     draft_dir = None
@@ -29,6 +33,7 @@ class Draft:
     current_position = 1 #the current position the draft is on
     time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
     skip_check = False #will skip the current persons turn if set to true
+    total_participants = 0 #the total number of participants in the draft
 
     #initilizer
     def __init__(self, name, rounds, limit, bot):
@@ -39,6 +44,46 @@ class Draft:
         self.bot = bot
         #print to the console
         print(f'[DRAFT] [FROM {name.upper()}] Draft Created.')
+
+    #function to save the detail values
+    def save_draft(self):
+        path = 'drafts.csv'
+        #ensure parent directory exists if a directory was provided
+        dirpath = os.path.dirname(path)
+        if dirpath and not os.path.exists(dirpath):
+            os.makedirs(dirpath, exist_ok=True)
+        #read existing rows
+        rows = []
+        if os.path.exists(path):
+            with open(path, mode='r', newline='', encoding='utf-8') as draft_file:
+                rows = list(csv.reader(draft_file))
+        #prepare the row to save (convert None to empty string)
+        def _s(v):
+            return '' if v is None else str(v)
+        new_row = [
+            _s(self.draft_name),
+            _s(self.people_limit),
+            _s(self.round_limit),
+            _s(self.announcement_id),
+            _s(self.emoji),
+            _s(self.announce_channel),
+            _s(self.bot),
+            _s(self.draft_sku)]
+        #replace an existing entry with the same draft_name or append if not found
+        replaced = False
+        for i, row in enumerate(rows):
+            if row and row[0] == self.draft_name:
+                rows[i] = new_row
+                replaced = True
+                break
+        if not replaced:
+            rows.append(new_row)
+        #write all rows back to the file
+        with open(path, mode='w', newline='', encoding='utf-8') as draft_file:
+            writer = csv.writer(draft_file)
+            writer.writerows(rows)
+        print(f'[DRAFT] [FROM {self.draft_name.upper()}] Draft Saved.')
+        return True
 
     #function to log the announcement for the channel
     def log_announcement(self, id, emoji, channel):
@@ -109,6 +154,15 @@ class Draft:
                     success = False
         return success
     
+    #function to set the draft order
+    def set_draft_order(self):
+        print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
+        for drafter in self.draft_data:
+            total_participants +=1
+            drafter["position"] = total_participants
+            print(f"{drafter['name']}, {drafter['position']}")
+        return
+
     #function to clear the users picks
     def clear_picks(self,player_id):
         player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
