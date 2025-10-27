@@ -61,14 +61,14 @@ class Draft:
         def _s(v):
             return '' if v is None else str(v)
         new_row = [
-            _s(self.draft_name),
-            _s(self.people_limit),
-            _s(self.round_limit),
-            _s(self.announcement_id),
-            _s(self.emoji),
-            _s(self.announce_channel),
-            _s(self.bot),
-            _s(self.draft_sku)]
+            _s(self.draft_name), #0
+            _s(self.people_limit), #1
+            _s(self.round_limit), #2
+            _s(self.announcement_id), #3
+            _s(self.emoji), #4
+            _s(self.announce_channel), #5
+            _s(self.bot), #6
+            _s(self.draft_sku)] #7
         #replace an existing entry with the same draft_name or append if not found
         replaced = False
         for i, row in enumerate(rows):

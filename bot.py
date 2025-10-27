@@ -221,11 +221,15 @@ async def on_ready():
             #creates the robotevents object
             new_api = robotevents_handler.Robotevent(draft_name,draft_sku, RB_TOKEN)
             draft_apidata[draft_name] = new_api
-            #saves the draft id for future reference
-            new_draft.draft_sku = new_api.get_event_id()
             #generates the team data
             draft_teams = new_api.get_teams_from_event()
             new_draft.generate_team_data(draft_teams,draft_rounds)
+            #gets the rest of the saved data
+            new_draft.announcement_id = value_check(row[3])
+            new_draft.emoji = value_check(row[4])
+            new_draft.announce_channel = value_check(row[5])
+            new_draft.bot = value_check(row[6])
+            print(f"[BOT] [FROM {draft_name.upper()}] Draft Loaded Successfully")
 
 """
 MISC AND TEST COMMANDS
@@ -289,6 +293,7 @@ async def create_draft(interaction: discord.Interaction,
     draft_apidata[draft_object] = new_api
     #saves the draft id for future reference
     new_draft.draft_sku = new_api.get_event_id()
+    draft_teams = new_api.get_teams_from_event()
     new_draft.generate_team_data(draft_teams,draft_rounds)
     #safely compute teams count and send the final followup (we already deferred)
     try:
