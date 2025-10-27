@@ -36,8 +36,11 @@ from dotenv import load_dotenv
 load_dotenv()  
 DS_TOKEN = os.getenv("DISCORD_TOKEN")
 RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
-ADMIN_BYPASS_IDS = os.getenv("ADMIN_BYPASS_IDS").split(",")
 
+#get the admin bypass ids
+ADMIN_BYPASS_IDS = os.getenv("ADMIN_BYPASS_IDS").split(",")
+for i in range(len(ADMIN_BYPASS_IDS)):
+    ADMIN_BYPASS_IDS[i] = int(ADMIN_BYPASS_IDS[i])
 
 #discord imports
 import discord
@@ -367,7 +370,8 @@ async def start_draft(interaction: discord.Interaction,
     #respond to the user
     await interaction.followup.send(f"Draft Starting.")
 
-#command to announce the draft
+#command to get a csv file of the current draft
+#note: this command will eventually be reworked to an excel file, and made available for all users
 @bot.tree.command(name="get_csv_file", description="Returns a csv file for the draft")
 async def get_csv_file(interaction: discord.Interaction,
     draft_object: str,
