@@ -580,7 +580,7 @@ async def queue_picks(interaction: discord.Interaction,
     if passed:
         #put the pick in their queue
         completed = drafts[draft].pick_multiple(interaction.user.id,picks)
-        await interaction.response.send_message(f"{picks} Chosen." if completed else "Teams or Player does not exist.",ephemeral=True)
+        await interaction.response.send_message(f"{picks} Chosen.",ephemeral=True if completed else "Teams or Player does not exist.")
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
@@ -626,6 +626,8 @@ async def get_available_picks(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     passed,draft = validation_check(interaction)
     if passed:
+        #make an index to create new pages for every 8 teams
+        index = 1
         #get all of the available picks and send them
         team_msg = "The Current Teams Are:\n"
         for team in drafts[draft].teams:
