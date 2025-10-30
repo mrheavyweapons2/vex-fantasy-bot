@@ -8,6 +8,7 @@ Description: Holds all of the functionality for processing the drafts
 #importing csv for a savedata file
 import csv
 import os
+import random
 
 #main class
 class Draft:
@@ -156,6 +157,9 @@ class Draft:
     #function to set the draft order
     def set_draft_order(self):
         print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
+        #shuffle the draft data
+        random.shuffle(self.draft_data)
+        #set the positions
         for drafter in self.draft_data:
             self.total_participants +=1
             drafter["position"] = self.total_participants
