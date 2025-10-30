@@ -66,24 +66,29 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 """
 DISCORD PAGINATION
     -class: Pagination (handles all of the pagination for long messages or guides)
+    -function: get_available_picks (shows the user all of the available picks and utilizes pagination)
 """
 
 class Pagination(discord.ui.View):
+    #constructor
     def __init__(self, pages: list[str], timeout: int = 180):
         super().__init__(timeout=timeout)
         self.pages = pages
         self.current_page = 0
 
+    #function to update the message
     async def update_message(self, interaction: discord.Interaction):
         content = self.pages[self.current_page]
         await interaction.response.edit_message(content=content, view=self)
 
+    #function to go to the previous page
     @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
     async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.current_page > 0:
             self.current_page -= 1
             await self.update_message(interaction)
 
+    #function to go to the next page
     @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.current_page < len(self.pages) - 1:
@@ -652,14 +657,19 @@ async def get_available_picks(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     passed,draft = validation_check(interaction)
     if passed:
-        #make an index to create new pages for every 8 teams
-        index = 1
-        #get all of the available picks and send them
-        team_msg = "The Current Teams Are:\n"
-        for team in drafts[draft].teams:
-            team_msg += f"{team["team"]}, {team["picks_remaining"]} Left\n" if team["picks_remaining"] != 0 else ""
-        #send this monster of a message
-        await interaction.response.send_message(team_msg,ephemeral=True)
+        #get all of the available picks and send them via pagination
+        available_picks = drafts[draft].get_teams()
+        pages = []
+        current_page = ""  
+        for team_pos in range (len(available_picks)):
+            current_page += f"{available_picks[team_pos]}\n"
+            #every 8 teams, make a new page
+            if team_pos % 8 == 7:
+                pages.append(current_page)
+                current_page = ""
+        #send the paginated message
+        pagination_view = Pagination(pages)
+        await interaction.response.send_message(content=pages[0], view=pagination_view)
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
