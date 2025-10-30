@@ -211,10 +211,9 @@ async def on_ready():
         reader = csv.reader(draft_savefile)
         for row in reader:
             draft_name = row[0]
-            print(draft_name)
-            draft_rounds = value_check(row[2])
+            draft_rounds = int(value_check(row[2]))
             draft_limit = value_check(row[1])
-            draft_sku = value_check(row[7])
+            draft_sku = value_check(row[6])
             #creates the draft object
             new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, bot)
             drafts[draft_name] = new_draft
@@ -224,11 +223,26 @@ async def on_ready():
             #generates the team data
             draft_teams = new_api.get_teams_from_event()
             new_draft.generate_team_data(draft_teams,draft_rounds)
-            #gets the rest of the saved data
-            new_draft.announcement_id = value_check(row[3])
+            #gets the announcement id
+            new_draft.announcement_id = int(value_check(row[3]))
             new_draft.emoji = value_check(row[4])
-            new_draft.announce_channel = value_check(row[5])
-            new_draft.bot = value_check(row[6])
+            # restore announce channel id -> channel object if possible
+            announce_id = value_check(row[5])
+            if announce_id is None:
+                new_draft.announce_channel = None
+            else:
+                try:
+                    cid = int(announce_id)
+                    # try cache first, fall back to API fetch
+                    channel_obj = bot.get_channel(cid)
+                    if channel_obj is None:
+                        try:
+                            channel_obj = await bot.fetch_channel(cid)
+                        except Exception:
+                            channel_obj = None
+                    new_draft.announce_channel = channel_obj
+                except Exception:
+                    new_draft.announce_channel = None
             print(f"[BOT] [FROM {draft_name.upper()}] Draft Loaded Successfully")
 
 """
@@ -288,11 +302,9 @@ async def create_draft(interaction: discord.Interaction,
     await interaction.response.defer()
     #save the sku to the draft
     new_draft.draft_sku = draft_sku
-    #creates the robotevents object
+    #creates the robotevents object and gets the teams
     new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
     draft_apidata[draft_object] = new_api
-    #saves the draft id for future reference
-    new_draft.draft_sku = new_api.get_event_id()
     draft_teams = new_api.get_teams_from_event()
     new_draft.generate_team_data(draft_teams,draft_rounds)
     #safely compute teams count and send the final followup (we already deferred)
@@ -610,7 +622,7 @@ async def get_available_picks(interaction: discord.Interaction):
         #get all of the available picks and send them
         team_msg = "The Current Teams Are:\n"
         for team in drafts[draft].teams:
-            team_msg += f"{team["team"]}, {team["picks_remaining"]} Picks Remaining\n" if team["picks_remaining"] != 0 else ""
+            team_msg += f"{team["team"]}, {team["picks_remaining"]} Left\n" if team["picks_remaining"] != 0 else ""
         #send this monster of a message
         await interaction.response.send_message(team_msg,ephemeral=True)
         return    

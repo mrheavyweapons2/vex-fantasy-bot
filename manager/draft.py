@@ -66,9 +66,8 @@ class Draft:
             _s(self.round_limit), #2
             _s(self.announcement_id), #3
             _s(self.emoji), #4
-            _s(self.announce_channel), #5
-            _s(self.bot), #6
-            _s(self.draft_sku)] #7
+            _s(getattr(self.announce_channel, "id", self.announce_channel)), #5
+            _s(self.draft_sku)] #6
         #replace an existing entry with the same draft_name or append if not found
         replaced = False
         for i, row in enumerate(rows):
@@ -158,8 +157,8 @@ class Draft:
     def set_draft_order(self):
         print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
         for drafter in self.draft_data:
-            total_participants +=1
-            drafter["position"] = total_participants
+            self.total_participants +=1
+            drafter["position"] = self.total_participants
             print(f"{drafter['name']}, {drafter['position']}")
         return
 
