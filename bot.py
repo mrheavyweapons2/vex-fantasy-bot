@@ -74,6 +74,14 @@ HELPER FUNCTIONS
 
 #function to return true if the user is an administator, false if not
 def is_admin(interaction: discord.Interaction) -> bool:
+    '''
+    helper function that validates if the user is an administrator or a bypassed ID
+
+    :param interaction: the raw discord interaction object to check the user
+    :type interaction: discord.Interaction
+    :return: True if the user is an admin or bypassed, False otherwise
+    :rtype: bool
+    '''
     try:
         user = interaction.user
         # explicit bypass
@@ -89,11 +97,19 @@ def is_admin(interaction: discord.Interaction) -> bool:
     return False
 
 #function to validate if the user is allowed to run the 
-def validation_check(drafter_id, drafter_channel) -> bool:
+def validation_check(interaction: discord.Interaction) -> bool:
+    '''
+    helper function that connects the drafter ID and channel to a draft instance
+
+    :param interaction: the raw discord interaction object to check for an id and channel
+    :type interaction: discord.Interaction
+    :return: True if the user is communicating in the correct draft channel and is an active participant, false Otherwise
+    :rtype: bool
+    '''
     for draft in drafts:
-        if drafts[draft].channel == drafter_channel:
+        if drafts[draft].channel == interaction.channel:
             #validate and make sure person is in the draft
-            if drafts[draft].validate_participant(drafter_id) == True:
+            if drafts[draft].validate_participant(interaction.user.id) == True:
                 #code here
                 return True, draft
     return False, None
@@ -519,14 +535,11 @@ USER COMMANDS
 async def quick_pick(interaction: discord.Interaction, team: str):
     #upper the pick
     team = team.upper()
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
     #check what channel this draft is affilliated with
-    passed,draft = validation_check(drafter_id,drafter_channel)
+    passed,draft = validation_check(interaction)
     if passed:
         #put the pick in their queue
-        if drafts[draft].pick_one(drafter_id,team):
+        if drafts[draft].pick_one(interaction.user.id,team):
             await interaction.response.send_message(f"{team} Chosen.")
         else:
             await interaction.response.send_message(f"{team} Does Not Exist.")
@@ -544,9 +557,6 @@ async def queue_picks(interaction: discord.Interaction,
     team3: str = None,
     team4: str = None
     ):
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
     #create a list to send to the function
     picks = []
     #goes through one by one
@@ -558,10 +568,10 @@ async def queue_picks(interaction: discord.Interaction,
     for pick in picks:
         if pick == None:
             picks.remove(pick)
-    passed,draft = validation_check(drafter_id,drafter_channel)
+    passed,draft = validation_check(interaction)
     if passed:
         #put the pick in their queue
-        completed = drafts[draft].pick_multiple(drafter_id,picks)
+        completed = drafts[draft].pick_multiple(interaction.user.id,picks)
         await interaction.response.send_message(f"{picks} Chosen." if completed else "Teams or Player does not exist.",ephemeral=True)
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
@@ -569,14 +579,11 @@ async def queue_picks(interaction: discord.Interaction,
 #command that lets the user clear their list of picks
 @bot.tree.command(name="clear_picks", description="Clears any picks that you currently have in queue.")
 async def clear_picks(interaction: discord.Interaction):
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
     #check what channel this draft is affilliated with
-    passed,draft = validation_check(drafter_id,drafter_channel)
+    passed,draft = validation_check(interaction)
     if passed:
         #code here
-        if drafts[draft].clear_picks(drafter_id):
+        if drafts[draft].clear_picks(interaction.user.id):
             await interaction.response.send_message(f"Picks Cleared",ephemeral=True)
         else:
             await interaction.response.send_message(f"Error While Clearing Picks",ephemeral=True)
@@ -585,14 +592,11 @@ async def clear_picks(interaction: discord.Interaction):
 
 @bot.tree.command(name="get_my_picks", description="Gets what current picks you have.")
 async def get_my_picks(interaction: discord.Interaction):
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
     #check what channel this draft is affilliated with
-    passed,draft = validation_check(drafter_id,drafter_channel)
+    passed,draft = validation_check(interaction)
     if passed:
         #code here
-        picks = drafts[draft].get_picks(drafter_id)
+        picks = drafts[draft].get_picks(interaction.user.id)
         await interaction.response.send_message(f"Your current picks are {picks}.")
         return
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
@@ -600,13 +604,10 @@ async def get_my_picks(interaction: discord.Interaction):
 #command that shows the user their current picks
 @bot.tree.command(name="get_my_queue", description="Shows your current picks that are in your queue.")
 async def get_my_queue(interaction: discord.Interaction):
-    #get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
-    passed,draft = validation_check(drafter_id,drafter_channel)
+    passed,draft = validation_check(interaction)
     if passed:
         #get the picks
-        picks = drafts[draft].get_queue(drafter_id)
+        picks = drafts[draft].get_queue(interaction.user.id)
         await interaction.response.send_message(f"You have Picked {picks}")
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
@@ -614,10 +615,8 @@ async def get_my_queue(interaction: discord.Interaction):
 #command that shows the user all of the available picks
 @bot.tree.command(name="get_available_picks", description="Tells user what picks they have available.")
 async def get_available_picks(interaction: discord.Interaction):
-#get what channel command was sent in, and the user id
-    drafter_id = interaction.user.id
-    drafter_channel = interaction.channel
-    passed,draft = validation_check(drafter_id,drafter_channel)
+    #get what channel command was sent in, and the user id
+    passed,draft = validation_check(interaction)
     if passed:
         #get all of the available picks and send them
         team_msg = "The Current Teams Are:\n"
