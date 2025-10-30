@@ -10,9 +10,7 @@ CHECKLIST/ORDER OF COMPLETION
 MS 1: DRAFT REGISTRATION (COMPLETE)
 MS 2: PEOPLE DATA COLLECTION (COMPLETE)
 MS 3: AUTOMATE INITIAL DATA COLLECTION (COMPLETE)
-MS 4: MAIN DRAFT FUNCTIONALITY
-    -draft bot will create a thread to run through the draft depending on how many rounds
-    -
+MS 4: MAIN DRAFT FUNCTIONALITY (COMPLETE)
 MS 5: AUTOMATE DRAFT RESULTS
     -when the draft is finished draft admins can send a command for the bot to compute the draft results based on parameters
     -if the data is incomplete, it will error
@@ -64,6 +62,34 @@ intents.members = True
 
 #assigns "!" as the command prefix for all commands
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+"""
+DISCORD PAGINATION
+    -class: Pagination (handles all of the pagination for long messages or guides)
+"""
+
+class Pagination(discord.ui.View):
+    def __init__(self, pages: list[str], timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.pages = pages
+        self.current_page = 0
+
+    async def update_message(self, interaction: discord.Interaction):
+        content = self.pages[self.current_page]
+        await interaction.response.edit_message(content=content, view=self)
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.current_page > 0:
+            self.current_page -= 1
+            await self.update_message(interaction)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.current_page < len(self.pages) - 1:
+            self.current_page += 1
+            await self.update_message(interaction)
+
 
 """
 HELPER FUNCTIONS
@@ -603,7 +629,7 @@ async def get_my_picks(interaction: discord.Interaction):
     #check what channel this draft is affilliated with
     passed,draft = validation_check(interaction)
     if passed:
-        #code here
+        #check the picks from the draft
         picks = drafts[draft].get_picks(interaction.user.id)
         await interaction.response.send_message(f"Your current picks are {picks}.")
         return
