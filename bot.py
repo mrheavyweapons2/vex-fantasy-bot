@@ -116,6 +116,14 @@ def validation_check(interaction: discord.Interaction) -> bool:
 
 #function to run the draft
 def run_draft(draft_instance,bot):
+    '''
+    function that runs the main draft for picking teams
+
+    :param draft_instance: the class object that houses all of the data for the draft
+    :type draft_instance: Class Object
+    :param bot: the bot object
+    :type bot: idk
+    '''
     #get the draft order
     drafters = draft_instance.draft_data
     #set the draft order
