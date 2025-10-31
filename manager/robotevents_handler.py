@@ -12,41 +12,32 @@ BASE_URL = "https://www.robotevents.com/api/v2"
 import requests
 
 class Robotevent:
-    #api token
-    api_token = None
-    #values to use all over robotevents
-    event_name = None
-    event_sku = None
-    event_id = None
-
     #constructor
     def __init__(self, name, sku, token):
         #set the variables
         self.event_sku = sku
         self.api_token = token
         self.event_name = name
-        #get th events id
-        self.get_event_id()
+        #get the events id
+        self.event_id = self.get_event_id()
 
     #access the event through the API
 
     def get_event_id(self):
-        if self.event_id == None:
-            #json request parameters
-            url = "https://www.robotevents.com/api/v2/events"
-            params = {"sku": {self.event_sku}}
-            headers = {
-                "Authorization": f"Bearer {self.api_token}",
-                "Accept": "application/json"
-                }
-            #get a response from the api, and get the event id from the event sku
-            response = requests.get(url, headers=headers, params=params)
-            data = response.json()
-            #pull the event id
-            self.event_id = data["data"][0]["id"]
-            print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Event ID Acquired: {self.event_id}")
-        else:
-            return self.event_id
+        #json request parameters
+        url = "https://www.robotevents.com/api/v2/events"
+        params = {"sku": {self.event_sku}}
+        headers = {
+            "Authorization": f"Bearer {self.api_token}",
+            "Accept": "application/json"
+            }
+        #get a response from the api, and get the event id from the event sku
+        response = requests.get(url, headers=headers, params=params)
+        data = response.json()
+        #pull the event id
+        event_id = data["data"][0]["id"]
+        print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Event ID Acquired: {event_id}")
+        return event_id
 
     def get_teams_from_event(self):
         #get the list of teams

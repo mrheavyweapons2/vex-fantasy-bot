@@ -374,23 +374,11 @@ async def create_draft(interaction: discord.Interaction,
     await interaction.response.defer()
     #save the sku to the draft
     new_draft.draft_sku = draft_sku
-    #safely compute teams count and send the final followup (we already deferred)
-    try:
-        if draft_teams is None:
-            teams_count = 0
-        elif hasattr(draft_teams, "__len__"):
-            teams_count = len(draft_teams)
-        else:
-            # if it's an iterator/generator, convert to list (be cautious with very large datasets)
-            draft_teams = list(draft_teams)
-            teams_count = len(draft_teams)
-    except Exception:
-        teams_count = 0
     #send the draft creation confirmation
     msg = (
         f'Draft "{draft_object}" created successfully!\n'
         f'Rounds: {draft_rounds}\n'
-        f'Teams Loaded: {teams_count}\n'
+        f'Teams Loaded: {len(new_draft.teams)}\n'
         f'Event SKU: {draft_sku}\n'
         f'Limit: {draft_limit}'
     )

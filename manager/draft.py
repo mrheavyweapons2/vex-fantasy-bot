@@ -19,30 +19,6 @@ RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
 
 #main class
 class Draft:
-
-    #shared detail variables
-    draft_name = None #name of the draft
-    people_limit = None #maximum number of people
-    round_limit = None #number of rounds to be played
-    channel = None #what channel the current draft should be operated in
-    announce_channel = None #what channel the announcement was sat in
-    announcement_id = None #the message ID for the announcement
-    emoji = None #what emoji was used to react to the announcement
-    bot = None
-    draft_sku = None #the robotevents ID for the draft
-
-    #directory data
-    draft_dir = None
-
-    #draft memory
-    teams = []
-    draft_data = []
-    current_round = 0 #the current round the draft is on
-    current_position = 1 #the current position the draft is on
-    time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
-    skip_check = False #will skip the current persons turn if set to true
-    total_participants = 0 #the total number of participants in the draft
-
     #initilizer
     def __init__(self, name, rounds, limit, draft_sku, bot):
         #get our unique instance values from the initialization
@@ -51,11 +27,23 @@ class Draft:
         self.people_limit = limit
         self.bot = bot
         self.draft_sku = draft_sku
+        #temporarily empty variables
+        self.channel = None #the channel the draft is being held in
+        self.announce_channel = None #the channel the draft is announced in
+        self.announcement_id = None #the message id of the announcement
+        self.emoji = None #the emoji used for the announcement
+        #other draft memory and data
+        self.draft_data = []
+        self.current_round = 0 #the current round the draft is on
+        self.current_position = 1 #the current position the draft is on
+        self.time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
+        self.skip_check = False #will skip the current persons turn if set to true
+        self.total_participants = 0 #the total number of participants in the draft
         #creates the robotevents object
         new_api = robotevents_handler.Robotevent(self.draft_name,draft_sku, RB_TOKEN)
         #generates the team data
         draft_teams = new_api.get_teams_from_event()
-        self.generate_team_data(draft_teams)
+        self.teams = self.generate_team_data(draft_teams)
         #print to the console
         print(f'[DRAFT] [FROM {name.upper()}] Draft Created.')
 
@@ -140,12 +128,14 @@ class Draft:
     
     #function to generate a list of dicts containing teams and how many picks they have
     def generate_team_data(self,draft_teams):
+        #create an empty team object
+        teams = []
         #for each team, turn them into a dict and add them into a new list
         for current_team in draft_teams:
             #turn into dict and add to list
             team = {"team": current_team, "picks_remaining":self.round_limit}
-            self.teams.append(team)
-        pass
+            teams.append(team)
+        return teams
 
     #function to make sure the player is a valid participate in the draft
     def validate_participant(self,player_id):
