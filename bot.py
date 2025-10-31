@@ -488,17 +488,17 @@ async def get_csv_file(interaction: discord.Interaction,
 
         for drafter in sorted_drafters:
             #get the position, name, and id
-            pos = drafter.get("position", "")
-            did = drafter.get("id", "")
-            name = drafter.get("name", "")
+            pos = drafter["position"]
+            d_id = drafter["id"]
+            name = drafter["name"]
             #use draft_instance.get_picks to retrieve picks for that drafter
             try:
-                picks = draft_instance.get_picks(did)
+                picks = draft_instance.get_picks(d_id)
                 for pick in picks:
                     pick = str(pick)
             except Exception:
                 picks = None
-            row = [pos ,did ,name]
+            row = [pos ,d_id ,name]
             row.extend(picks)
             writer.writerow(row)
 
@@ -558,7 +558,6 @@ USER COMMANDS
 """
 
 #command that lets the user pick one bot
-    #1 mandatory parameter for team pick
 @bot.tree.command(name="quick_pick", description="Reserve a single pick for your next turn")
 async def quick_pick(interaction: discord.Interaction, team: str):
     #upper the pick
@@ -575,9 +574,6 @@ async def quick_pick(interaction: discord.Interaction, team: str):
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
-    #1 mandatory parameter for double picking teams
-    #1 mandatory parameter for team pick
-    #3 optional team pick parameters
 @bot.tree.command(name="queue_picks", description="Lets you select a multitude of teams (max of 4) to be queued")
 async def queue_picks(interaction: discord.Interaction,
     team1: str,
@@ -618,6 +614,7 @@ async def clear_picks(interaction: discord.Interaction):
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
+#command that shows the user their current picks
 @bot.tree.command(name="get_my_picks", description="Gets what current picks you have.")
 async def get_my_picks(interaction: discord.Interaction):
     #check what channel this draft is affilliated with
@@ -629,7 +626,7 @@ async def get_my_picks(interaction: discord.Interaction):
         return
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
-#command that shows the user their current picks
+#command that shows the user their current queue
 @bot.tree.command(name="get_my_queue", description="Shows your current picks that are in your queue.")
 async def get_my_queue(interaction: discord.Interaction):
     passed,draft = validation_check(interaction)

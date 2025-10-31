@@ -1,5 +1,5 @@
 """
-File: bot.py
+File: manager/robotevents_handler.py
 Author: Jeremiah Nairn
 
 Description: Holds all of the functionality related to the Robotevents API

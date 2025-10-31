@@ -1,5 +1,5 @@
 """
-File: bot.py
+File: manager/draft.py
 Author: Jeremiah Nairn
 
 Description: Holds all of the functionality for processing the drafts
