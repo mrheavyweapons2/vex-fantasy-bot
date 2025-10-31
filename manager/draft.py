@@ -9,6 +9,13 @@ Description: Holds all of the functionality for processing the drafts
 import csv
 import os
 import random
+from manager import robotevents_handler
+
+#imports robotevents token from an encrypted .env file
+import os
+from dotenv import load_dotenv
+load_dotenv()  
+RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
 
 #main class
 class Draft:
@@ -37,12 +44,18 @@ class Draft:
     total_participants = 0 #the total number of participants in the draft
 
     #initilizer
-    def __init__(self, name, rounds, limit, bot):
+    def __init__(self, name, rounds, limit, draft_sku, bot):
         #get our unique instance values from the initialization
         self.draft_name = name
         self.round_limit = rounds
         self.people_limit = limit
         self.bot = bot
+        self.draft_sku = draft_sku
+        #creates the robotevents object
+        new_api = robotevents_handler.Robotevent(self.draft_name,draft_sku, RB_TOKEN)
+        #generates the team data
+        draft_teams = new_api.get_teams_from_event()
+        self.generate_team_data(draft_teams)
         #print to the console
         print(f'[DRAFT] [FROM {name.upper()}] Draft Created.')
 
@@ -126,11 +139,11 @@ class Draft:
         pass
     
     #function to generate a list of dicts containing teams and how many picks they have
-    def generate_team_data(self,team_data,picks_remaining):
+    def generate_team_data(self,draft_teams):
         #for each team, turn them into a dict and add them into a new list
-        for current_team in team_data:
+        for current_team in draft_teams:
             #turn into dict and add to list
-            team = {"team": current_team, "picks_remaining":picks_remaining}
+            team = {"team": current_team, "picks_remaining":self.round_limit}
             self.teams.append(team)
         pass
 

@@ -69,32 +69,55 @@ DISCORD PAGINATION
     -function: get_available_picks (shows the user all of the available picks and utilizes pagination)
 """
 
-class Pagination(discord.ui.View):
+class Paginator(discord.ui.View):
     #constructor
-    def __init__(self, pages: list[str], timeout: int = 180):
+    def __init__(self, items, per_page=5, embed_fn=None, timeout=180):
+        #declares variables and calls super
         super().__init__(timeout=timeout)
-        self.pages = pages
-        self.current_page = 0
+        self.items = items
+        self.per_page = per_page
+        self.page = 0
+        self.embed_fn = embed_fn or self.default_embed
 
-    #function to update the message
-    async def update_message(self, interaction: discord.Interaction):
-        content = self.pages[self.current_page]
-        await interaction.response.edit_message(content=content, view=self)
+    def default_embed(self, items, page, total_pages):
+        """Default embed generator if none provided"""
+        embed = discord.Embed(
+            title=f"Page {page + 1}/{total_pages}",
+            description="\n".join(items),
+            color=discord.Color.blurple()
+        )
+        return embed
 
-    #function to go to the previous page
-    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
-    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.current_page > 0:
-            self.current_page -= 1
+    #gets the items for the current page
+    def get_page_items(self):
+        start = self.page * self.per_page
+        end = start + self.per_page
+        return self.items[start:end]
+
+    #updates the message with the new page
+    async def update_message(self, interaction):
+        total_pages = (len(self.items) - 1) // self.per_page + 1
+        embed = self.embed_fn(self.get_page_items(), self.page, total_pages)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    #button to go to the previous page
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary)
+    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.page > 0:
+            self.page -= 1
             await self.update_message(interaction)
+        else:
+            await interaction.response.defer()
 
-    #function to go to the next page
-    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
-    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.current_page < len(self.pages) - 1:
-            self.current_page += 1
+    #button to go to the next page
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        total_pages = (len(self.items) - 1) // self.per_page + 1
+        if self.page < total_pages - 1:
+            self.page += 1
             await self.update_message(interaction)
-
+        else:
+            await interaction.response.defer()
 
 """
 HELPER FUNCTIONS
@@ -239,7 +262,6 @@ def run_draft(draft_instance,bot):
 
 #dictionary to store drafts
 drafts = {} # key: draft_name, value: draft instance
-draft_apidata = {} #key: draft_name, value: draft instance that refers to the robotevents side
 
 """
 BOT EVENTS
@@ -258,6 +280,7 @@ async def on_ready():
     except Exception as e:
         print(f"[BOT] Error syncing commands: {e}")
     #load the drafts from saved data
+    print("[BOT] Loading Drafts from Save File...")
     with open ("drafts.csv", "r", newline='',encoding="utf-8") as draft_savefile:
         #helper function that turns "" into None
         def value_check(value):
@@ -270,14 +293,8 @@ async def on_ready():
             draft_limit = value_check(row[1])
             draft_sku = value_check(row[6])
             #creates the draft object
-            new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, bot)
+            new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, draft_sku, bot)
             drafts[draft_name] = new_draft
-            #creates the robotevents object
-            new_api = robotevents_handler.Robotevent(draft_name,draft_sku, RB_TOKEN)
-            draft_apidata[draft_name] = new_api
-            #generates the team data
-            draft_teams = new_api.get_teams_from_event()
-            new_draft.generate_team_data(draft_teams,draft_rounds)
             #gets the announcement id
             new_draft.announcement_id = int(value_check(row[3]))
             new_draft.emoji = value_check(row[4])
@@ -351,17 +368,12 @@ async def create_draft(interaction: discord.Interaction,
         print(f"[BOT] [FROM {draft_object}] Invalid Amount of Rounds")
         return
     #creates the draft object
-    new_draft = draft.Draft(draft_object, draft_rounds, draft_limit, bot)
+    new_draft = draft.Draft(draft_object, draft_rounds, draft_limit, draft_sku, bot)
     drafts[draft_object] = new_draft
     #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
     await interaction.response.defer()
     #save the sku to the draft
     new_draft.draft_sku = draft_sku
-    #creates the robotevents object and gets the teams
-    new_api = robotevents_handler.Robotevent(draft_object,draft_sku, RB_TOKEN)
-    draft_apidata[draft_object] = new_api
-    draft_teams = new_api.get_teams_from_event()
-    new_draft.generate_team_data(draft_teams,draft_rounds)
     #safely compute teams count and send the final followup (we already deferred)
     try:
         if draft_teams is None:
@@ -379,7 +391,6 @@ async def create_draft(interaction: discord.Interaction,
         f'Draft "{draft_object}" created successfully!\n'
         f'Rounds: {draft_rounds}\n'
         f'Teams Loaded: {teams_count}\n'
-        f'Event ID: {new_api.get_event_id()}\n'
         f'Event SKU: {draft_sku}\n'
         f'Limit: {draft_limit}'
     )
@@ -657,21 +668,27 @@ async def get_available_picks(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     passed,draft = validation_check(interaction)
     if passed:
-        #get all of the available picks and send them via pagination
-        available_picks = drafts[draft].get_teams()
-        pages = []
-        current_page = ""  
-        for team_pos in range (len(available_picks)):
-            current_page += f"{available_picks[team_pos]}\n"
-            #every 8 teams, make a new page
-            if team_pos % 8 == 7:
-                pages.append(current_page)
-                current_page = ""
-        #send the paginated message
-        pagination_view = Pagination(pages)
-        await interaction.response.send_message(content=pages[0], view=pagination_view)
-        return    
+        #get all of the available picks and convert them to strings
+        picks = drafts[draft].get_teams()
+        for pick in range (len(picks)):
+            picks[pick] = str(picks[pick])
+        #embed function for teams
+        def team_embed(items, page, total_pages):
+            embed = discord.Embed(
+                title=f"Available Teams (Page {page + 1}/{total_pages})",
+                description="\n".join(items),
+                color=discord.Color.green()
+            )
+            return embed
+        #declare the paginator and send the message
+        paginator = Paginator(picks, per_page=10, embed_fn=team_embed)
+        await interaction.response.send_message(
+            embed=team_embed(picks[:10], 0, (len(picks)-1)//10 + 1),
+            view=paginator,
+            ephemeral=True
+        )
+        return
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
-#runs the bot on the token
+#runs the bot on the token (very important yes very hmmm)
 bot.run(DS_TOKEN)
