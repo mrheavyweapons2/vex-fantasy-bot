@@ -320,7 +320,6 @@ async def on_ready():
 """
 MISC AND TEST COMMANDS
     -bear (test command that sends a bear gif to make sure the bots working)
-    -get_teams (creates a temporary API object and prints a list of teams to make sure the API request is working)
 """
 
 #test command
@@ -328,15 +327,6 @@ MISC AND TEST COMMANDS
 async def bear(interaction: discord.Interaction):
     await interaction.response.send_message("https://tenor.com/view/bear-scream-gif-7281540763674856279")
 
-#command that lets the user clear their list of picks
-@bot.tree.command(name="get_teams", description="Gives you a list of teams from a certain event.")
-async def get_teams(interaction: discord.Interaction,
-    sku: str
-    ):
-    await interaction.response.defer()
-    rbh = robotevents_handler.Robotevent("get_teams_command",sku, RB_TOKEN)
-    teams = rbh.get_teams_from_event()
-    await interaction.followup.send(f"{teams}")
 
 """
 ADMIN COMMANDS
