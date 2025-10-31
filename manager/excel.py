@@ -9,7 +9,6 @@ Description: Holds all of the functionality for making excel files and displayin
 import openpyxl as xl
 import win32com.client as win32
 import os
-import io
 
 #class to manage the excel file
 class ExcelManager:
