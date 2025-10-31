@@ -125,6 +125,7 @@ class Draft:
             #add the player to the list
             self.draft_data.append(player)
         pass
+        print(self.draft_data)
     
     #function to generate a list of dicts containing teams and how many picks they have
     def generate_team_data(self,draft_teams):
