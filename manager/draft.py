@@ -32,6 +32,7 @@ class Draft:
         self.announce_channel = None #the channel the draft is announced in
         self.announcement_id = None #the message id of the announcement
         self.emoji = None #the emoji used for the announcement
+        self.excel_manager = None #the excel manager for the draft
         #other draft memory and data
         self.draft_data = []
         self.current_round = 0 #the current round the draft is on
@@ -125,7 +126,6 @@ class Draft:
             #add the player to the list
             self.draft_data.append(player)
         pass
-        print(self.draft_data)
     
     #function to generate a list of dicts containing teams and how many picks they have
     def generate_team_data(self,draft_teams):

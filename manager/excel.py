@@ -78,7 +78,7 @@ class ExcelManager:
             drafter_cell = f"A{row}"
             #identify the player by their draft position
             for drafter in self.draft_data:
-                if drafter['position'] == player:
+                if drafter['position'] == player+1:
                     self.sheet[drafter_cell] = drafter['name']
             #format the cells in the row
             for round in range(self.rounds+1):

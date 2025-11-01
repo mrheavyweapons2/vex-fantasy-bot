@@ -23,8 +23,8 @@ MS 6: QUALITY OF LIFE CHANGES
 
 #import draft
 from manager import draft
-#import robotevents
-from manager import robotevents_handler
+#import excel
+from manager import excel
 
 #imports discord token from an encrypted .env file
 import os
@@ -50,7 +50,6 @@ import time
 import threading
 import asyncio
 import csv
-import tempfile
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
 intents = discord.Intents.default()
@@ -180,8 +179,6 @@ def run_draft(draft_instance,bot):
     '''
     #get the draft order
     drafters = draft_instance.draft_data
-    #set the draft order
-    draft_instance.set_draft_order()
     reverse = 1
     #go through each round
     for round in range(draft_instance.round_limit):
@@ -279,6 +276,9 @@ async def on_ready():
         print(f"[BOT] Synced {len(synced)} command(s)")
     except Exception as e:
         print(f"[BOT] Error syncing commands: {e}")
+    #wipe the excels folder
+    excel.wipe_excel_folder()
+    print("[BOT] Excels File Refreshed.")
     #load the drafts from saved data
     print("[BOT] Loading Drafts from Save File...")
     with open ("drafts.csv", "r", newline='',encoding="utf-8") as draft_savefile:
@@ -431,16 +431,18 @@ async def start_draft(interaction: discord.Interaction,
     #get all of the users who reacted
     reaction = discord.utils.get(announcment.reactions, emoji=emoji)
     users = [user async for user in reaction.users() if not user.bot]
-    player_data = [
-    {
-        "id":user.id,
-        "name":user.name,
-        "nick":user.nick or False
-    }
+    player_data = [{"id":user.id,"name":user.name,"nick":user.nick or False}
     for user in users
     ]
     #generate the player data
     drafts[draft_object].generate_player_data(player_data)
+    #set the draft order
+    drafts[draft_object].set_draft_order()
+    #create the draft excel file
+    drafts[draft_object].excel_manager = excel.ExcelManager(f"{drafts[draft_object].draft_name}_draft", drafts[draft_object].draft_data,
+                                                            drafts[draft_object].round_limit, drafts[draft_object].total_participants)
+    drafts[draft_object].excel_manager.create_draft_sheet()
+
     #send an initial message to the channel
     try:
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
@@ -454,68 +456,6 @@ async def start_draft(interaction: discord.Interaction,
         return
     #respond to the user
     await interaction.followup.send(f"Draft Starting.")
-
-#command to get a csv file of the current draft
-#note: this command will eventually be reworked to an excel file, and made available for all users
-@bot.tree.command(name="get_csv_file", description="Returns a csv file for the draft")
-async def get_csv_file(interaction: discord.Interaction,
-    draft_object: str,
-    ):
-    # permission check
-    if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
-
-    #send an initial message to the channel
-    try:
-        #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
-        await interaction.response.defer()
-        draft_instance = drafts.get(draft_object)
-        if not draft_instance:
-            await interaction.followup.send("Draft does not exist.", ephemeral=True)
-            return
-
-        #gather and sort drafters by position
-        drafters = getattr(draft_instance, "draft_data", []) or []
-        sorted_drafters = sorted(drafters, key=lambda x: x.get("position", float("inf")))
-
-        #write CSV to a temporary file
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode="w", newline="", encoding="utf-8")
-        writer = csv.writer(tmp)
-        #get the template row
-
-        writer.writerow(["position", "id", "name", "picks"])
-
-        for drafter in sorted_drafters:
-            #get the position, name, and id
-            pos = drafter["position"]
-            d_id = drafter["id"]
-            name = drafter["name"]
-            #use draft_instance.get_picks to retrieve picks for that drafter
-            try:
-                picks = draft_instance.get_picks(d_id)
-                for pick in picks:
-                    pick = str(pick)
-            except Exception:
-                picks = None
-            row = [pos ,d_id ,name]
-            row.extend(picks)
-            writer.writerow(row)
-
-        tmp.flush()
-        tmp.close()
-
-        # Send the file and clean up
-        with open(tmp.name, "rb") as fp:
-            await interaction.followup.send(file=discord.File(fp, filename=f"{draft_object}_picks.csv"))
-        os.remove(tmp.name)
-        #send the emoji in that channel
-        print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] CSV File Sent.")
-    #if theres a channel restriction
-    except discord.Forbidden:
-        await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
-        return
-    await interaction.followup.send(f"CSV File Sent.")
 
 #command to skip the current persons turn
 @bot.tree.command(name="skip_turn", description="Skips the current drafters turn")
@@ -664,6 +604,36 @@ async def get_available_picks(interaction: discord.Interaction):
         )
         return
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
+
+#command that shows the user all of the available picks
+@bot.tree.command(name="get_draft_image", description="Shows the user an image of the current draft.")
+async def get_draft_image(interaction: discord.Interaction):
+    #get what channel command was sent in, and the user id
+    passed,draft = validation_check(interaction)
+    if passed:
+        #send an initial message to the channel
+        try:
+            #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+            await interaction.response.defer()
+            draft_instance = drafts.get(draft)
+            if not draft_instance:
+                await interaction.followup.send("Draft does not exist.", ephemeral=True)
+                return
+            #get an image of the draft sheet
+            image_path = draft_instance.excel_manager.get_draft_as_image()
+            #send the image
+            await interaction.followup.send(file=discord.File(image_path))
+            #delete the temporary image file
+            os.remove(image_path)
+            #send the emoji in that channel
+            print(f"[BOT] [FROM {drafts[draft].draft_name.upper()}] Image Sent.")
+            return
+        #if theres a channel restriction
+        except discord.Forbidden:
+            await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
+            return
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
+
 
 #runs the bot on the token (very important yes very hmmm)
 bot.run(DS_TOKEN)
