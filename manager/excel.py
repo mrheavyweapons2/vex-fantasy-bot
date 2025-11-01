@@ -139,7 +139,7 @@ class ExcelManager:
             chart.Export(image_path, "PNG")
         # remove the temporary chart object
         chart_object.Delete()
-        print(f"[EXCEL] Draft image saved as {image_path}")
+        print(f"[EXCEL] Draft image saved as {self.filename}_draft.png")
         # close the workbook and quit excel
         wb.Close(SaveChanges=False)
         excel.Quit()
