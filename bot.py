@@ -535,8 +535,11 @@ async def queue_picks(interaction: discord.Interaction,
     passed,draft = validation_check(interaction)
     if passed:
         #put the pick in their queue
-        completed = drafts[draft].pick_multiple(interaction.user.id,picks)
-        await interaction.response.send_message(f"{picks} Chosen.",ephemeral=True if completed else "Teams or Player does not exist.")
+        completed = drafts[draft].pick_multiple(interaction.user.id, picks)
+        if completed:
+            await interaction.response.send_message(f"{picks} Chosen.", ephemeral=True)
+        else:
+            await interaction.response.send_message("Teams or Player does not exist.", ephemeral=True)
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
@@ -583,10 +586,8 @@ async def get_available_picks(interaction: discord.Interaction):
     #get what channel command was sent in, and the user id
     passed,draft = validation_check(interaction)
     if passed:
-        #get all of the available picks and convert them to strings
-        picks = drafts[draft].get_teams()
-        for pick in range (len(picks)):
-            picks[pick] = str(picks[pick])
+        #make a new list of team strings so we don't mutate the draft's internal list
+        picks = [str(p) for p in list(drafts[draft].get_teams())]
         #embed function for teams
         def team_embed(items, page, total_pages):
             embed = discord.Embed(
@@ -619,6 +620,8 @@ async def get_draft_image(interaction: discord.Interaction):
             if not draft_instance:
                 await interaction.followup.send("Draft does not exist.", ephemeral=True)
                 return
+            #update the excel file
+            draft_instance.excel_manager.fill_draft_sheet(draft_instance.draft_data)
             #get an image of the draft sheet
             image_path = draft_instance.excel_manager.get_draft_as_image()
             #send the image

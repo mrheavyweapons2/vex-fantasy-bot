@@ -43,8 +43,8 @@ class Draft:
         #creates the robotevents object
         new_api = robotevents_handler.Robotevent(self.draft_name,draft_sku, RB_TOKEN)
         #generates the team data
-        draft_teams = new_api.get_teams_from_event()
-        self.teams = self.generate_team_data(draft_teams)
+        self.draft_teams = new_api.get_teams_from_event()
+        self.teams = self.generate_team_data(self.draft_teams)
         #print to the console
         print(f'[DRAFT] [FROM {name.upper()}] Draft Created.')
 
@@ -147,16 +147,11 @@ class Draft:
     
     #function to check if the team is available to pick
     def validate_availability(self,pick):
-        #test startments
-        success = False
-        #make sure the pick is available
+        # make sure the pick exists and has picks remaining
         for team in self.teams:
-            if team["team"] == pick:
-                #team found
-                success = True
-                if team["picks_remaining"] == 0:
-                    success = False
-        return success
+            if team.get("team") == pick:
+                return team.get("picks_remaining", 0) > 0
+        return False
     
     #function to set the draft order
     def set_draft_order(self):

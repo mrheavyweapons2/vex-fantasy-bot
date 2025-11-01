@@ -95,7 +95,18 @@ class ExcelManager:
 
     #function to fill in the draft sheet with data
     def fill_draft_sheet(self, draft_data):
-
+        #get the position of each player, and format each collumn
+        for player in range(self.total_players):
+            row = player + 2  # Starting from row 2 since row 1 is the header
+            #identify the player by their draft position
+            for drafter in self.draft_data:
+                if drafter['position'] == player+1:
+                    #format the cells in the row
+                    for round in range(self.rounds):
+                        col = chr(66 + round)
+                        pick_cell = f"{col}{row}"
+                        #get the pick and put it in the cell
+                        self.sheet[pick_cell] = drafter[f"round_{round+1}"]
         #save the file and return
         self.save_excel()
         return
