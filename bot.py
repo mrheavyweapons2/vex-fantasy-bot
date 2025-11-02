@@ -50,6 +50,7 @@ import time
 import threading
 import asyncio
 import csv
+import tempfile
 
 #setup intents (just message_content isn't needed for slash commands, but safe to keep)
 intents = discord.Intents.default()
@@ -333,8 +334,8 @@ ADMIN COMMANDS
     -create_draft (creates the draft, and its dedicated directory)
     -announce_draft (announces the draft and opens it for people to enter)
     -start_draft (starts the draft for everyone to star/get picking)
-    -get_all_picks (returns a csv file for entire draft)
-    -skip (skips the current persons turn)
+    -get_csv_file (returns a csv file for entire draft)
+    -skip_turn (skips the current persons turn)
 """
 
 #command that creates the draft
@@ -488,6 +489,97 @@ async def skip_turn(interaction: discord.Interaction):
         return
     await interaction.followup.send(f"Error.",ephemeral=True)
 
+@bot.tree.command(name="get_csv_file", description="Returns a csv file for the draft")
+async def get_csv_file(interaction: discord.Interaction,
+    draft_object: str,
+    ):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+
+    #send an initial message to the channel
+    try:
+        #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
+        await interaction.response.defer()
+        draft_instance = drafts.get(draft_object)
+        if not draft_instance:
+            await interaction.followup.send("Draft does not exist.", ephemeral=True)
+            return
+
+        #gather and sort drafters by position
+        drafters = getattr(draft_instance, "draft_data", []) or []
+        sorted_drafters = sorted(drafters, key=lambda x: x.get("position", float("inf")))
+
+        #write CSV to a temporary file
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode="w", newline="", encoding="utf-8")
+        writer = csv.writer(tmp)
+        #get the template row
+
+        writer.writerow(["position", "id", "name", "picks"])
+
+        for drafter in sorted_drafters:
+            #get the position, name, and id
+            pos = drafter["position"]
+            d_id = drafter["id"]
+            name = drafter["name"]
+            #use draft_instance.get_picks to retrieve picks for that drafter
+            try:
+                picks = draft_instance.get_picks(d_id)
+                for pick in picks:
+                    pick = str(pick)
+            except Exception:
+                picks = None
+            row = [pos ,d_id ,name]
+            row.extend(picks)
+            writer.writerow(row)
+
+        tmp.flush()
+        tmp.close()
+
+        # Send the file and clean up
+        with open(tmp.name, "rb") as fp:
+            await interaction.followup.send(file=discord.File(fp, filename=f"{draft_object}_picks.csv"))
+        os.remove(tmp.name)
+        #send the emoji in that channel
+        print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] CSV File Sent.")
+    #if theres a channel restriction
+    except discord.Forbidden:
+        await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
+        return
+    await interaction.followup.send(f"CSV File Sent.")
+
+#function to force a pick upon a drafter
+@bot.tree.command(name="force_pick", description="Force a pick for a drafter from a draft object")
+async def force_pick(interaction: discord.Interaction):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+    #code here
+    await interaction.followup.send(f"Command not Implemented.",ephemeral=True)
+
+#function to force a pick upon a drafter
+@bot.tree.command(name="add_team", description="Manually adds a team to the draft list")
+async def add_team(interaction: discord.Interaction):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+    #code here
+    await interaction.followup.send(f"Command not Implemented.",ephemeral=True)
+
+#function to force a pick upon a drafter
+@bot.tree.command(name="remove_team", description="Manually removes a team to the draft list")
+async def remove_team(interaction: discord.Interaction):
+    # permission check
+    if not is_admin(interaction):
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+    #code here
+    await interaction.followup.send(f"Command not Implemented.",ephemeral=True)
+
+
 """
 USER COMMANDS
     -quick_pick (reserves a single pick for the next turn)
@@ -507,7 +599,7 @@ async def quick_pick(interaction: discord.Interaction, team: str):
     if passed:
         #put the pick in their queue
         if drafts[draft].pick_one(interaction.user.id,team):
-            await interaction.response.send_message(f"{team} Chosen.")
+            await interaction.response.send_message(f"{team} Chosen.",ephemeral=True)
         else:
             await interaction.response.send_message(f"{team} Does Not Exist.")
         return
@@ -576,7 +668,7 @@ async def get_my_queue(interaction: discord.Interaction):
     if passed:
         #get the picks
         picks = drafts[draft].get_queue(interaction.user.id)
-        await interaction.response.send_message(f"You have Picked {picks}")
+        await interaction.response.send_message(f"Your current queue is {picks}")
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
