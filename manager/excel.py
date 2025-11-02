@@ -49,7 +49,7 @@ class ExcelManager:
             os.makedirs('excels')
         #save the file
         self.workbook.save(f"excels/{self.filename}.xlsx")
-        print(f"[EXCEL] Excel file saved as {f"{self.filename}.xlsx"}")
+        print(f"[EXCEL] Excel file saved as {self.filename}.xlsx")
 
     def update_playerdata(self,playerdata):
         #clear the current playerdata
