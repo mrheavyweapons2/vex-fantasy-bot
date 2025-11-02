@@ -336,6 +336,8 @@ ADMIN COMMANDS
     -start_draft (starts the draft for everyone to star/get picking)
     -get_csv_file (returns a csv file for entire draft)
     -skip_turn (skips the current persons turn)
+    -force_pick (forces a pick for the current user)
+    -add_team ()
 """
 
 #command that creates the draft
@@ -543,41 +545,93 @@ async def get_csv_file(interaction: discord.Interaction,
         os.remove(tmp.name)
         #send the emoji in that channel
         print(f"[BOT] [FROM {drafts[draft_object].draft_name.upper()}] CSV File Sent.")
+        return
     #if theres a channel restriction
     except discord.Forbidden:
         await interaction.followup.send(f"Bot does not have access to that channel.",ephemeral=True)
         return
-    await interaction.followup.send(f"CSV File Sent.")
 
 #function to force a pick upon a drafter
 @bot.tree.command(name="force_pick", description="Force a pick for a drafter from a draft object")
-async def force_pick(interaction: discord.Interaction):
-    # permission check
+async def force_pick(interaction: discord.Interaction,
+    target: discord.User,
+    pick: str,
+    round: int = None
+    ):
+    #defer the response
+    await interaction.response.defer()
+    #permission check
     if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        await interaction.followup.send("You do not have permission to use this command.", ephemeral=True)
         return
-    #code here
-    await interaction.followup.send(f"Command not Implemented.",ephemeral=True)
+    #check what channel they are in and get the discord user
+    for draft in drafts:
+        if drafts[draft].channel == interaction.channel:
+            #this is the draft, validate the participant
+            if drafts[draft].validate_participant(target.id) == True:
+                #if rounds is none, just add their pick to the queue
+                if (round == None) or (round == drafts[draft].current_round):
+                    if drafts[draft].pick_one(target.id,pick):
+                        await interaction.followup.send(f"{pick} Chosen for <@{target.id}>",ephemeral=True)
+                    else:
+                        await interaction.followup.send(f"{pick} Does Not Exist.",ephemeral=True)
+                    return
+                else:
+                    #will add this later
+                    await interaction.followup.send(f"Command Not Implemented.",ephemeral=True)
+                    return
+            #if the target isnt a member of the draft
+            await interaction.followup.send(f"Target is not a member of this draft.",ephemeral=True)
+            return
+    #if there is no draft to affiliate with
+    await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)
+    return
 
 #function to force a pick upon a drafter
 @bot.tree.command(name="add_team", description="Manually adds a team to the draft list")
-async def add_team(interaction: discord.Interaction):
-    # permission check
+async def add_team(interaction: discord.Interaction,
+    team: str
+    ):
+    #defer the response
+    await interaction.response.defer()
+    #permission check
     if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        await interaction.followup.send("You do not have permission to use this command.", ephemeral=True)
         return
-    #code here
-    await interaction.followup.send(f"Command not Implemented.",ephemeral=True)
+    #check what channel they are in and get the discord user
+    for draft in drafts:
+        if drafts[draft].channel == interaction.channel:
+            if drafts[draft].add_team(team):
+                await interaction.followup.send(f"{team} added to draft.",ephemeral=True)
+            else:
+                await interaction.followup.send("Team already exists.",ephemeral=True)
+            return
+    #if there is no draft to affiliate with
+    await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)
+    return
 
 #function to force a pick upon a drafter
 @bot.tree.command(name="remove_team", description="Manually removes a team to the draft list")
-async def remove_team(interaction: discord.Interaction):
-    # permission check
+async def remove_team(interaction: discord.Interaction,
+    team: str
+    ):
+    #defer the response
+    await interaction.response.defer()
+    #permission check
     if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        await interaction.followup.send("You do not have permission to use this command.",ephemeral=True)
         return
-    #code here
-    await interaction.followup.send(f"Command not Implemented.",ephemeral=True)
+    #check what channel they are in and get the discord user
+    for draft in drafts:
+        if drafts[draft].channel == interaction.channel:
+            if drafts[draft].remove_team(team):
+                await interaction.followup.send(f"{team} removed from draft.",ephemeral=True)
+            else:
+                await interaction.followup.send("Error while removing team.",ephemeral=True)
+            return
+    #if there is no draft to affiliate with
+    await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)
+    return
 
 
 """

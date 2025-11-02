@@ -165,6 +165,32 @@ class Draft:
             print(f"{drafter['name']}, {drafter['position']}")
         return
 
+    #function to add a team from the team list
+    def add_team(self, team):
+        #check if the team is not already in the draft
+        for teamcheck in self.teams:
+            if teamcheck.get("team") == team:
+                return False
+        #if its not, it will progress here, where it will add the team
+        team = {"team": team, "picks_remaining":self.round_limit}
+        self.teams.append(team)
+        return True
+
+    #function to remove a team from the team list
+    def remove_team(self, team):
+        #check if the team is not already in the draft
+        for teamcheck in self.teams:
+            if teamcheck["team"] == team:
+                #when the team is located, remove it from the list
+                self.teams.remove(teamcheck)
+                #remove the team from everyones picks
+                for player in self.draft_data:
+                    for round in range(self.round_limit):
+                        if team == player[f"round_{round+1}"]:
+                            player[f"round_{round+1}"] = None
+                return True
+        return False
+    
     #function to clear the users picks
     def clear_picks(self,player_id):
         player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
@@ -220,6 +246,10 @@ class Draft:
                 success = True
                 assigned += 1
         return success
+
+    #function to force a pick for a player
+    def force_pick(self,player_id, pick, round):
+        return False
 
     #function to put a pick in queue and validate if it processed
     def process_pick(self, position):
