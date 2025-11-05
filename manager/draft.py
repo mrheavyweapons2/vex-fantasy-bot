@@ -43,9 +43,8 @@ class Draft:
         self.time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
         self.skip_check = False #will skip the current persons turn if set to true
         self.total_participants = 0 #the total number of participants in the draft
-        #generate a random seed and set it
+        #generate a random seed or set it
         self.seed = seed
-        random.seed(self.seed)
         #creates the robotevents object
         new_api = robotevents_handler.Robotevent(self.draft_name,draft_sku, RB_TOKEN)
         #generates the team data
@@ -92,7 +91,6 @@ class Draft:
         with open(path, mode='w', newline='', encoding='utf-8') as draft_file:
             writer = csv.writer(draft_file)
             writer.writerows(rows)
-        print(f'[DRAFT] [FROM {self.draft_name.upper()}] Draft Saved.')
         return True
 
     #function to log the announcement for the channel
@@ -165,6 +163,7 @@ class Draft:
     def set_draft_order(self):
         print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
         #shuffle the draft data
+        random.seed(self.seed)
         random.shuffle(self.draft_data)
         #set the positions
         for drafter in self.draft_data:

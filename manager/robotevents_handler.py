@@ -54,7 +54,7 @@ class Robotevent:
             data = response.json()
             #extract team numbers
             teams += [team["number"] for team in data.get("data", [])]
-            print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}, page {page+1}")
+        print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}.")
         #return the teams
         return teams
 
