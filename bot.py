@@ -178,78 +178,64 @@ def run_draft(draft_instance,bot):
     :param bot: the bot object
     :type bot: idk
     '''
-    #get the draft order
+    #get the draft data
     drafters = draft_instance.draft_data
-    reverse = 1
-    #go through each round
-    for round in range(draft_instance.round_limit):
-        #increases the round
-        draft_instance.current_round +=1
-        #goes through each position
-        for position in range(draft_instance.total_participants):
-            #validate who is supposed to be up for this turn
-            for drafter in drafters:
-                if drafter["position"] == draft_instance.current_position:
-                    #debouncer
-                    debounce = True
-                    #check and see if their queue can be processed
-                    while not draft_instance.process_pick(draft_instance.current_position):
-                        #check if skip has been requested
-                        if draft_instance.skip_check:
-                            draft_instance.skip_check = False
-                            print(f"[BOT] [FROM {draft_instance.draft_name}] Turn Skipped.")
-                            break
-                        # ping who is up, who is on deck, and who is in the hole (only once per turn)
-                        if debounce:
-                            debounce = False
-                            try:
-                                #map positions to drafter ids
-                                pos_map = {d.get("position"): d.get("id") for d in drafters}
-                                total = draft_instance.total_participants or len(pos_map)
-                                curr = draft_instance.current_position
-                                direction = reverse  # 1 for forward, -1 for backward
-                                #helper to safely mention a position
-                                def mention_for_pos(p):
-                                    _id = pos_map.get(p)
-                                    return f"<@{_id}>" if _id else ""
-                                #compute next two pick positions using the same increment logic as the loop
-                                if position + 1 == total:
-                                    # we're at the end of the current pass: next pick is the same position (start of next pass),
-                                    # then one position inward from the end on the next pass
-                                    next1_pos = curr
-                                    next2_pos = curr - 1 if total > 1 else curr
-                                else:
-                                    #normal case: next is current + direction
-                                    next1_pos = curr + direction
-                                    #if the following index would be the last in this pass, the pick after next1 will be the same (start of next pass)
-                                    if position + 2 == total:
-                                        next2_pos = next1_pos
-                                    else:
-                                        next2_pos = next1_pos + direction
-                                #clamp positions to valid range [1, total]
-                                def clamp(p):
-                                    if p is None: 
-                                        return None
-                                    return max(1, min(total, p))
-                                next1_pos = clamp(next1_pos)
-                                next2_pos = clamp(next2_pos)
-                                now_up = mention_for_pos(curr)
-                                on_deck = mention_for_pos(next1_pos)
-                                in_hole = mention_for_pos(next2_pos)
+    #helper function to get the snake position in the draft and the round
+    def get_snake_position(real_position):
+        """
+        Returns the round number and draft position for a given real position
+        in a snake-style draft.
 
-                                msg = f"UP NOW: {now_up}\nON DECK: {on_deck}\nIN THE HOLE: {in_hole}"
-                                # schedule the send on the bot event loop from this worker thread
-                                if getattr(draft_instance, "channel", None) is not None:
-                                    asyncio.run_coroutine_threadsafe(
-                                        draft_instance.channel.send(msg),
-                                        draft_instance.bot.loop
-                                    )
-                            except Exception as e:
-                                print(f"[BOT] Error sending draft ping: {e}")
-                        time.sleep(1)
-                    pass
-            draft_instance.current_position += (0 if position+1 == draft_instance.total_participants else 1*reverse)
-        reverse = reverse*-1
+        :param real_position: the absolute pick number (starting at 0)
+        :type real_position: int
+        :return: (round_number, position_in_round)
+        """
+        #get the round number
+        round_number = (real_position // draft_instance.total_participants)
+        #gets the position in the round
+        index_in_round = real_position % draft_instance.total_participants
+        if round_number % 2 == 0:
+            position_in_round = index_in_round
+        else:
+            position_in_round = draft_instance.total_participants - 1 - index_in_round
+        #return both values
+        return round_number+1, position_in_round
+    #go through each round
+    for real_position in range(draft_instance.total_participants*draft_instance.round_limit):
+        round, draft_instance.current_position = get_snake_position(real_position)
+        for drafter in drafters:
+            if drafter["position"] == draft_instance.current_position:
+                #debouncer
+                debounce = True
+                #check and see if their queue can be processed
+                while not draft_instance.process_pick(draft_instance.current_position,round):
+                    #check if skip has been requested
+                    if draft_instance.skip_check:
+                        draft_instance.skip_check = False
+                        print(f"[BOT] [FROM {draft_instance.draft_name}] Turn Skipped.")
+                        break
+                    #ping who is up, who is on deck, and who is in the hole (only once per turn)
+                    if debounce:
+                        debounce = False  
+                        #get the ids of the three players
+                        now_up = drafter["id"]
+                        discard, drafter_pos = get_snake_position(real_position+1)
+                        for next_drafter in drafters:
+                            if next_drafter["position"] == drafter_pos:
+                                on_deck = next_drafter["id"]
+                        discard, drafter_pos = get_snake_position(real_position+1)
+                        for next_drafter in drafters:
+                            if next_drafter["position"] == drafter_pos:
+                                in_hole = next_drafter["id"]
+                        msg = f"UP NOW: <@{now_up}>\nON DECK: <@{on_deck}>\nIN THE HOLE: <@{in_hole}>"
+                        #schedule the send on the bot event loop from this worker thread
+                        if getattr(draft_instance, "channel", None) is not None:
+                            asyncio.run_coroutine_threadsafe(
+                                draft_instance.channel.send(msg),
+                                draft_instance.bot.loop
+                            )
+                    time.sleep(1)
+                pass
     #print that the draft has finished
     asyncio.run_coroutine_threadsafe(
         draft_instance.channel.send("Draft has Finished."),

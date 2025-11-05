@@ -23,7 +23,7 @@ class Draft:
     #initilizer
     def __init__(self, name, rounds, limit, draft_sku, bot,
                  #optional variables (used for loading drafts mostly)
-                  seed = random.randrange(sys.maxsize), current_position = 1):
+                  seed = random.randrange(sys.maxsize), current_position = 0):
         #get our unique instance values from the initialization
         self.draft_name = name
         self.round_limit = rounds
@@ -38,7 +38,6 @@ class Draft:
         self.excel_manager = None #the excel manager for the draft
         #other draft memory and data
         self.draft_data = []
-        self.current_round = 0 #the current round the draft is on
         self.current_position = current_position #the current position the draft is on
         self.time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
         self.skip_check = False #will skip the current persons turn if set to true
@@ -167,9 +166,9 @@ class Draft:
         random.shuffle(self.draft_data)
         #set the positions
         for drafter in self.draft_data:
-            self.total_participants +=1
             drafter["position"] = self.total_participants
             print(f"{drafter['name']}, {drafter['position']}")
+            self.total_participants +=1
         return
 
     #function to add a team from the team list
@@ -259,14 +258,13 @@ class Draft:
         return False
 
     #function to put a pick in queue and validate if it processed
-    def process_pick(self, position):
+    def process_pick(self, position, round):
         # find player by draft position
         player_data = next((pd for pd in self.draft_data if pd.get("position") == position), None)
         if player_data is None:
             return False
         
-        self.current_round + 1
-        round_field = f"round_{self.current_round}"
+        round_field = f"round_{round}"
 
         # loop until we consume a valid pick or there are no picks left
         while True:
@@ -305,7 +303,7 @@ class Draft:
             # reset double_pick flag since a pick was consumed
             player_data["double_pick"] = False
 
-            print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} picked {pick} for Round {self.current_round}')
+            print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} picked {pick} for Round {round}')
             return True
         
     #function return a players picks
