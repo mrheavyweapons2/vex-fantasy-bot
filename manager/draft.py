@@ -9,6 +9,7 @@ Description: Holds all of the functionality for processing the drafts
 import csv
 import os
 import random
+import sys
 from manager import robotevents_handler
 
 #imports robotevents token from an encrypted .env file
@@ -20,7 +21,9 @@ RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
 #main class
 class Draft:
     #initilizer
-    def __init__(self, name, rounds, limit, draft_sku, bot):
+    def __init__(self, name, rounds, limit, draft_sku, bot,
+                 #optional variables (used for loading drafts mostly)
+                  seed = random.randrange(sys.maxsize), current_position = 1):
         #get our unique instance values from the initialization
         self.draft_name = name
         self.round_limit = rounds
@@ -36,10 +39,13 @@ class Draft:
         #other draft memory and data
         self.draft_data = []
         self.current_round = 0 #the current round the draft is on
-        self.current_position = 1 #the current position the draft is on
+        self.current_position = current_position #the current position the draft is on
         self.time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
         self.skip_check = False #will skip the current persons turn if set to true
         self.total_participants = 0 #the total number of participants in the draft
+        #generate a random seed and set it
+        self.seed = seed
+        random.seed(self.seed)
         #creates the robotevents object
         new_api = robotevents_handler.Robotevent(self.draft_name,draft_sku, RB_TOKEN)
         #generates the team data
@@ -70,7 +76,9 @@ class Draft:
             _s(self.announcement_id), #3
             _s(self.emoji), #4
             _s(getattr(self.announce_channel, "id", self.announce_channel)), #5
-            _s(self.draft_sku)] #6
+            _s(self.draft_sku), #6
+            _s(self.seed), #7
+            _s(self.current_position)] #8
         #replace an existing entry with the same draft_name or append if not found
         replaced = False
         for i, row in enumerate(rows):

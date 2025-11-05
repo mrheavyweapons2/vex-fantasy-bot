@@ -289,12 +289,15 @@ async def on_ready():
         #declare the reader and go through each line
         reader = csv.reader(draft_savefile)
         for row in reader:
+            #get values from the csv
             draft_name = row[0]
             draft_rounds = int(value_check(row[2]))
             draft_limit = value_check(row[1])
             draft_sku = value_check(row[6])
+            draft_seed = int(value_check(row[7]))
+            current_position = int(value_check(row[8]))
             #creates the draft object
-            new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, draft_sku, bot)
+            new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, draft_sku, bot, draft_seed, current_position)
             drafts[draft_name] = new_draft
             #gets the announcement id
             new_draft.announcement_id = int(value_check(row[3]))
