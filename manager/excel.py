@@ -99,7 +99,7 @@ class ExcelManager:
     def fill_draft_sheet(self, draft_data):
         #get the position of each player, and format each collumn
         for player in range(self.total_players):
-            row = player + 2  # Starting from row 2 since row 1 is the header
+            row = player + 3  # Starting from row 2 since row 1 is the header
             #identify the player by their draft position
             for drafter in self.draft_data:
                 if drafter['position'] == player+1:

@@ -220,8 +220,6 @@ class Draft:
                     if player_data["id"] == player_id:
                         player_data["queue_1"] = pick
                         player_data["double_pick"] = False
-                        #print check to console
-                        print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
                         success = True
                         break
                     else:
@@ -248,7 +246,6 @@ class Draft:
                 #set player's queue slot (1-based) and double_pick flag
                 player_data[f"queue_{assigned+1}"] = pick
                 #log and mark success
-                print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} has picked {pick}')
                 success = True
                 assigned += 1
         return success
