@@ -80,7 +80,7 @@ class ExcelManager:
             drafter_cell = f"A{row}"
             #identify the player by their draft position
             for drafter in self.draft_data:
-                if drafter['position'] == player+1:
+                if drafter['position'] == player:
                     self.sheet[drafter_cell] = drafter['name']
             #format the cells in the row
             for round in range(self.rounds+1):
@@ -99,10 +99,10 @@ class ExcelManager:
     def fill_draft_sheet(self, draft_data):
         #get the position of each player, and format each collumn
         for player in range(self.total_players):
-            row = player + 3  # Starting from row 2 since row 1 is the header
+            row = player + 2  # Starting from row 2 since row 1 is the header
             #identify the player by their draft position
             for drafter in self.draft_data:
-                if drafter['position'] == player+1:
+                if drafter['position'] == player:
                     #format the cells in the row
                     for round in range(self.rounds):
                         col = chr(66 + round)
@@ -299,8 +299,6 @@ class ExcelManager:
         img.save(image_path, format="PNG")
 
         return image_path
-
-        
 
     #function to create the results sheet
     def create_results_sheet(self):

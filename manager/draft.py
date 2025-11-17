@@ -36,6 +36,7 @@ class Draft:
         self.announcement_id = None #the message id of the announcement
         self.emoji = None #the emoji used for the announcement
         self.excel_manager = None #the excel manager for the draft
+        self.max_picks = None
         #other draft memory and data
         self.draft_data = []
         self.current_position = current_position #the current position the draft is on
@@ -65,18 +66,18 @@ class Draft:
             with open(path, mode='r', newline='', encoding='utf-8') as draft_file:
                 rows = list(csv.reader(draft_file))
         #prepare the row to save (convert None to empty string)
-        def _s(v):
+        def ck(v):
             return '' if v is None else str(v)
         new_row = [
-            _s(self.draft_name), #0
-            _s(self.people_limit), #1
-            _s(self.round_limit), #2
-            _s(self.announcement_id), #3
-            _s(self.emoji), #4
-            _s(getattr(self.announce_channel, "id", self.announce_channel)), #5
-            _s(self.draft_sku), #6
-            _s(self.seed), #7
-            _s(self.current_position)] #8
+            ck(self.draft_name), #0
+            ck(self.people_limit), #1
+            ck(self.round_limit), #2
+            ck(self.announcement_id), #3
+            ck(self.emoji), #4
+            ck(getattr(self.announce_channel, "id", self.announce_channel)), #5
+            ck(self.draft_sku), #6
+            ck(self.seed), #7
+            ck(self.current_position)] #8
         #replace an existing entry with the same draft_name or append if not found
         replaced = False
         for i, row in enumerate(rows):
@@ -130,7 +131,13 @@ class Draft:
             player["position"] = 0
             #add the player to the list
             self.draft_data.append(player)
-        pass
+        #get the total possible amount of picks
+        picks_available = (self.total_participants*self.round_limit)/len(self.teams)
+        picks_available = 1 if picks_available == 0 else picks_available
+        #assign the picks to each team
+        for team in self.teams:
+            team["picks_remaining"] = int(picks_available)
+        return
     
     #function to generate a list of dicts containing teams and how many picks they have
     def generate_team_data(self,draft_teams):
@@ -139,7 +146,7 @@ class Draft:
         #for each team, turn them into a dict and add them into a new list
         for current_team in draft_teams:
             #turn into dict and add to list
-            team = {"team": current_team, "picks_remaining":self.round_limit}
+            team = {"team": current_team}
             teams.append(team)
         return teams
 
@@ -178,7 +185,7 @@ class Draft:
             if teamcheck.get("team") == team:
                 return False
         #if its not, it will progress here, where it will add the team
-        team = {"team": team, "picks_remaining":self.round_limit}
+        team = {"team": team, "picks_remaining":self.max_picks}
         self.teams.append(team)
         return True
 

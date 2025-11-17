@@ -223,7 +223,7 @@ def run_draft(draft_instance,bot):
                         for next_drafter in drafters:
                             if next_drafter["position"] == drafter_pos:
                                 on_deck = next_drafter["id"]
-                        discard, drafter_pos = get_snake_position(real_position+1)
+                        discard, drafter_pos = get_snake_position(real_position+2)
                         for next_drafter in drafters:
                             if next_drafter["position"] == drafter_pos:
                                 in_hole = next_drafter["id"]
@@ -434,7 +434,6 @@ async def start_draft(interaction: discord.Interaction,
     drafts[draft_object].excel_manager = excel.ExcelManager(f"{drafts[draft_object].draft_name}_draft", drafts[draft_object].draft_data,
                                                             drafts[draft_object].round_limit, drafts[draft_object].total_participants)
     drafts[draft_object].excel_manager.create_draft_sheet()
-
     #send an initial message to the channel
     try:
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
@@ -644,7 +643,7 @@ async def quick_pick(interaction: discord.Interaction, team: str):
         if drafts[draft].pick_one(interaction.user.id,team):
             await interaction.response.send_message(f"{team} Chosen.",ephemeral=True)
         else:
-            await interaction.response.send_message(f"{team} Does Not Exist.")
+            await interaction.response.send_message(f"{team} is not available.")
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
@@ -674,7 +673,7 @@ async def queue_picks(interaction: discord.Interaction,
         if completed:
             await interaction.response.send_message(f"{picks} Chosen.", ephemeral=True)
         else:
-            await interaction.response.send_message("Teams or Player does not exist.", ephemeral=True)
+            await interaction.response.send_message("Teams or Player is not available.", ephemeral=True)
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
