@@ -171,9 +171,7 @@ class Draft:
             print(f"{drafter['name']}, {drafter['position']}")
             self.total_participants +=1
         #get the total possible amount of picks
-        picks_available = (self.total_participants*self.round_limit)/len(self.teams)
-        if picks_available == 0:
-            picks_available = 1
+        picks_available = ((self.total_participants*self.round_limit)/len(self.teams))+1
         #assign the picks to each team
         for team in self.teams:
             team["picks_remaining"] = int(picks_available)
