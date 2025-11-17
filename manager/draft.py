@@ -131,13 +131,6 @@ class Draft:
             player["position"] = 0
             #add the player to the list
             self.draft_data.append(player)
-        #get the total possible amount of picks
-        picks_available = (self.total_participants*self.round_limit)/len(self.teams)
-        if picks_available == 0:
-            picks_available = 1
-        #assign the picks to each team
-        for team in self.teams:
-            team["picks_remaining"] = int(picks_available)
         return
     
     #function to generate a list of dicts containing teams and how many picks they have
@@ -177,6 +170,13 @@ class Draft:
             drafter["position"] = self.total_participants
             print(f"{drafter['name']}, {drafter['position']}")
             self.total_participants +=1
+        #get the total possible amount of picks
+        picks_available = (self.total_participants*self.round_limit)/len(self.teams)
+        if picks_available == 0:
+            picks_available = 1
+        #assign the picks to each team
+        for team in self.teams:
+            team["picks_remaining"] = int(picks_available)
         return
 
     #function to add a team from the team list
