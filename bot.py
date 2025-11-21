@@ -202,6 +202,7 @@ def run_draft(draft_instance,bot):
         return round_number+1, position_in_round
     #go through each round
     for real_position in range(draft_instance.total_participants*draft_instance.round_limit):
+        #math out the current round and position
         round, draft_instance.current_position = get_snake_position(real_position)
         for drafter in drafters:
             if drafter["position"] == draft_instance.current_position:

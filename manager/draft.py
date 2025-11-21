@@ -262,50 +262,38 @@ class Draft:
 
     #function to put a pick in queue and validate if it processed
     def process_pick(self, position, round):
+        #helper function only used here
+        def shift_queue(player_data):
+            for pos in range(3):
+                player_data[f"queue_{pos+1}"] = player_data.get(f"queue_{pos+2}")
+            player_data["queue_4"] = None
+
         # find player by draft position
         player_data = next((pd for pd in self.draft_data if pd.get("position") == position), None)
         if player_data is None:
             return False
-        
         round_field = f"round_{round}"
-
-        # loop until we consume a valid pick or there are no picks left
+        #loop until we consume a valid pick or there are no picks left
         while True:
             pick = player_data.get("queue_1")
             if pick is None:
                 return False
-
             # if round field is invalid, drop this pick and shift left
             if round_field not in player_data:
-                player_data["queue_1"] = player_data.get("queue_2")
-                player_data["queue_2"] = player_data.get("queue_3")
-                player_data["queue_3"] = player_data.get("queue_4")
-                player_data["queue_4"] = None
+                shift_queue(player_data)
                 continue
-
             # ensure the pick is still available (team exists and has picks)
             team_entry = next((t for t in self.teams if t["team"] == pick), None)
             if team_entry is None or team_entry.get("picks_remaining", 0) <= 0:
-                # drop the invalid pick and shift left
-                player_data["queue_1"] = player_data.get("queue_2")
-                player_data["queue_2"] = player_data.get("queue_3")
-                player_data["queue_3"] = player_data.get("queue_4")
-                player_data["queue_4"] = None
+                #drop the invalid pick and shift left
+                shift_queue(player_data)
                 continue
-
-            # place the pick into the current round
+            #place the pick into the current round
             player_data[round_field] = pick
             team_entry["picks_remaining"] -= 1
-
-            # shift the queue forward (queue_2 -> queue_1, etc.)
-            player_data["queue_1"] = player_data.get("queue_2")
-            player_data["queue_2"] = player_data.get("queue_3")
-            player_data["queue_3"] = player_data.get("queue_4")
-            player_data["queue_4"] = None
-
-            # reset double_pick flag since a pick was consumed
-            player_data["double_pick"] = False
-
+            #shift the queue forward
+            shift_queue(player_data)
+            #declare what the user has picked in the console
             print(f'[DRAFT] [FROM {self.draft_name.upper()}] {player_data["name"]} picked {pick} for Round {round}')
             return True
         
