@@ -269,44 +269,50 @@ async def on_ready():
     print("[BOT] Excels File Refreshed.")
     #load the drafts from saved data
     print("[BOT] Loading Drafts from Save File...")
-    with open ("drafts.csv", "r", newline='',encoding="utf-8") as draft_savefile:
-        #helper function that turns "" into None
-        def value_check(value):
-            return None if value == "" else value
-        #declare the reader and go through each line
-        reader = csv.reader(draft_savefile)
-        for row in reader:
-            #get values from the csv
-            draft_name = row[0]
-            draft_rounds = int(value_check(row[2]))
-            draft_limit = value_check(row[1])
-            draft_sku = value_check(row[6])
-            draft_seed = int(value_check(row[7]))
-            current_position = int(value_check(row[8]))
-            #creates the draft object
-            new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, draft_sku, bot, draft_seed, current_position)
-            drafts[draft_name] = new_draft
-            #gets the announcement id
-            new_draft.announcement_id = int(value_check(row[3]))
-            new_draft.emoji = value_check(row[4])
-            # restore announce channel id -> channel object if possible
-            announce_id = value_check(row[5])
-            if announce_id is None:
-                new_draft.announce_channel = None
-            else:
+    try:
+        with open ("drafts.csv", "r", newline='',encoding="utf-8") as draft_savefile:
+            #helper function that turns "" into None
+            def value_check(value):
+                return None if value == "" else value
+            #declare the reader and go through each line
+            reader = csv.reader(draft_savefile)
+            for row in reader:
+                #get values from the csv
+                draft_name = row[0]
+                draft_rounds = int(value_check(row[2]))
+                draft_limit = value_check(row[1])
+                draft_sku = value_check(row[6])
+                draft_seed = int(value_check(row[7]))
+                current_position = int(value_check(row[8]))
+                #creates the draft object
+                new_draft = draft.Draft(draft_name, draft_rounds, draft_limit, draft_sku, bot, draft_seed, current_position)
+                drafts[draft_name] = new_draft
+                #gets the announcement id
                 try:
-                    cid = int(announce_id)
-                    # try cache first, fall back to API fetch
-                    channel_obj = bot.get_channel(cid)
-                    if channel_obj is None:
-                        try:
-                            channel_obj = await bot.fetch_channel(cid)
-                        except Exception:
-                            channel_obj = None
-                    new_draft.announce_channel = channel_obj
+                    new_draft.announcement_id = int(value_check(row[3]))
                 except Exception:
+                    new_draft.announcement_id = None
+                new_draft.emoji = value_check(row[4])
+                # restore announce channel id -> channel object if possible
+                announce_id = value_check(row[5])
+                if announce_id is None:
                     new_draft.announce_channel = None
-            print(f"[BOT] [FROM {draft_name.upper()}] Draft Loaded Successfully")
+                else:
+                    try:
+                        cid = int(announce_id)
+                        # try cache first, fall back to API fetch
+                        channel_obj = bot.get_channel(cid)
+                        if channel_obj is None:
+                            try:
+                                channel_obj = await bot.fetch_channel(cid)
+                            except Exception:
+                                channel_obj = None
+                        new_draft.announce_channel = channel_obj
+                    except Exception:
+                        new_draft.announce_channel = None
+                print(f"[BOT] [FROM {draft_name.upper()}] Draft Loaded Successfully")
+    except FileNotFoundError:
+        print("[BOT] No Drafts to Load.")
 
 """
 MISC AND TEST COMMANDS
