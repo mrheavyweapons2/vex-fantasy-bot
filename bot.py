@@ -5,22 +5,6 @@ Author: Jeremiah Nairn
 Description: This is a fantasy draft bot built specificly for vex and robotevents.
 """
 
-"""
-CHECKLIST/ORDER OF COMPLETION
-MS 1: DRAFT REGISTRATION (COMPLETE)
-MS 2: PEOPLE DATA COLLECTION (COMPLETE)
-MS 3: AUTOMATE INITIAL DATA COLLECTION (COMPLETE)
-MS 4: MAIN DRAFT FUNCTIONALITY (COMPLETE)
-MS 5: AUTOMATE DRAFT RESULTS
-    -when the draft is finished draft admins can send a command for the bot to compute the draft results based on parameters
-    -if the data is incomplete, it will error
-    -if not, it will send an image of the CSV data or send the file itself
-    -also will possibly just list the results in text
-MS 6: QUALITY OF LIFE CHANGES
-    -add an optional time limit for the bot to skip over people, skipped people can pick later but only at first come first serve
-    -automated draft results will be placed in a cleaner excel file to look better
-"""
-
 #import draft
 from manager import draft
 #import excel
@@ -183,7 +167,7 @@ def run_draft(draft_instance,bot):
     #helper function to get the snake position in the draft and the round
     def get_snake_position(real_position):
         """
-        Returns the round number and draft position for a given real position
+        returns the round number and draft position for a given real position
         in a snake-style draft.
 
         :param real_position: the absolute pick number (starting at 0)
@@ -256,6 +240,12 @@ BOT EVENTS
 #basically the bots constructor
 @bot.event
 async def on_ready():
+    '''
+    the function that functions as the bots constructor upon login and startup
+
+    takes no parameters and returns nothing, instead declares and initializes various variables and data
+    from saved files and such
+    '''
     #tells the console the bot is logged in
     print(f'[BOT] Logged in as {bot.user}')
     #registering commands with discord
@@ -338,12 +328,25 @@ ADMIN COMMANDS
 
 #command that creates the draft
 @bot.tree.command(name="create_draft", description="Creates the Draft")
-async def create_draft(interaction: discord.Interaction,
+async def create_draft(interaction: discord.Interaction,                       
     draft_object: str,
     draft_sku: str,
     draft_rounds: int,
     draft_limit: int = None
     ):
+    '''
+    function that takes in various parameters and creates a draft instance,
+    primarily uses the robotevents API to gather team data from an event SKU
+
+    :param draft_object: the name you want to assign to the draft
+    :type draft_object: str
+    :param draft_sku: the event sku to pull teams from
+    :type draft_sku: str
+    :param draft_rounds: the amount of rounds the draft will have
+    :type draft_rounds: int
+    :param draft_limit: the limit for the draft (optional field, defaults to None)
+    :type draft_limit: int
+    '''
     # permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -382,6 +385,16 @@ async def announce_draft(interaction: discord.Interaction,
     channel: discord.TextChannel,
     emoji_react: str
     ):
+    '''
+    function that announces the draft to a specified channel and opens it for people to enter
+
+    :param draft_object: the name you want to assign to the draft
+    :type draft_object: str
+    :param channel: the discord text channel to announce the draft in
+    :type channel: discord.TextChannel
+    :param emoji_react: the emoji that people will react with to enter the draft (use standard emojis only)
+    :type emoji_react: str
+    '''
     # permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -419,6 +432,16 @@ async def start_draft(interaction: discord.Interaction,
     draft_channel: discord.TextChannel,
     min_time_limit: int = None
     ):
+    '''
+    function that starts the draft instance, and creates a thread for the draft function to run in
+
+    :param draft_object: the name you want to assign to the draft
+    :type draft_object: str
+    :param draft_channel: the discord text channel to start the draft in
+    :type draft_channel: discord.TextChannel
+    :param min_time_limit: the minimum time limit for the draft (optional field, defaults to None)
+    :type min_time_limit: int
+    '''
     await interaction.response.defer()
     #permission check
     if not is_admin(interaction):
@@ -458,6 +481,11 @@ async def start_draft(interaction: discord.Interaction,
 #command to skip the current persons turn
 @bot.tree.command(name="skip_turn", description="Skips the current drafters turn")
 async def skip_turn(interaction: discord.Interaction):
+    '''
+    function that skips the turn of the draft assigned in the channel the command was sent in
+
+    takes no parameters and returns nothing
+    '''
     # permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -490,6 +518,12 @@ async def skip_turn(interaction: discord.Interaction):
 async def get_csv_file(interaction: discord.Interaction,
     draft_object: str,
     ):
+    '''
+    function that returns a csv file of the draft from a draft object
+
+    :param draft_object: the name of the requested draft
+    :type draft_object: str
+    '''
     # permission check
     if not is_admin(interaction):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -553,6 +587,16 @@ async def force_pick(interaction: discord.Interaction,
     pick: str,
     round: int = None
     ):
+    '''
+    function that forces a pick for a specified drafter during a draft
+
+    :param target: the discord user to force the pick upon
+    :type target: discord.User
+    :param pick: the team to force the drafter to pick
+    :type pick: str
+    :param round: the round to force the pick in (optional field, defaults to None for current round)
+    :type round: int
+    '''
     #defer the response
     await interaction.response.defer()
     #permission check
@@ -587,6 +631,12 @@ async def force_pick(interaction: discord.Interaction,
 async def add_team(interaction: discord.Interaction,
     team: str
     ):
+    '''
+    function that adds a team to the current draft instance
+
+    :param team: the team to add to the draft
+    :type team: str
+    '''
     #defer the response
     await interaction.response.defer()
     #permission check
@@ -610,6 +660,12 @@ async def add_team(interaction: discord.Interaction,
 async def remove_team(interaction: discord.Interaction,
     team: str
     ):
+    '''
+    function that removes a team to the current draft instance
+
+    :param team: the team to remove from the draft
+    :type team: str
+    '''
     #defer the response
     await interaction.response.defer()
     #permission check
@@ -631,16 +687,22 @@ async def remove_team(interaction: discord.Interaction,
 
 """
 USER COMMANDS
-    -quick_pick (reserves a single pick for the next turn)
-    -queue_picks (reserves multiple picks so the bot can automatically pick from it)
+    -pick (add a single pick to your pick queue)
+    -pick_multiple (add multiple picks to your pick queue)
     -clear_picks (clears the picks from the user)
     -get_my_queue (shows the user their current queue of picks)
     -get_available_picks (shows the user all of the available picks)
 """
 
 #command that lets the user pick one bot
-@bot.tree.command(name="quick_pick", description="Reserve a single pick for your next turn")
-async def quick_pick(interaction: discord.Interaction, team: str):
+@bot.tree.command(name="pick", description="add a single pick to your pick queue")
+async def pick(interaction: discord.Interaction, team: str):
+    '''
+    function that allows the user to pick a single team to add to their pick queue
+
+    :param team: the team to add to the queue
+    :type team: str
+    '''
     #upper the pick
     team = team.upper()
     #check what channel this draft is affilliated with
@@ -655,13 +717,25 @@ async def quick_pick(interaction: discord.Interaction, team: str):
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
 
 #command that lets the user reserve multiple picks (up to 4) so the bot can automatically pick for them
-@bot.tree.command(name="queue_picks", description="Lets you select a multitude of teams (max of 4) to be queued")
-async def queue_picks(interaction: discord.Interaction,
+@bot.tree.command(name="pick_multiple", description="Lets you select a multitude of teams (max of 4) to be queued")
+async def pick_multiple(interaction: discord.Interaction,
     team1: str,
     team2: str = None,
     team3: str = None,
     team4: str = None
     ):
+    '''
+    function that allows the user to pick a multiple teams to add to their pick queue
+
+    :param team1: the first team to add to the queue
+    :type team1: str
+    :param team2: the second team to add to the queue (optional field, defaults to None)
+    :type team2: str
+    :param team3: the third team to add to the queue (optional field, defaults to None)
+    :type team3: str
+    :param team4: the fourth team to add to the queue (optional field, defaults
+    :type team4: str
+    '''
     #create a list to send to the function
     picks = []
     #goes through one by one
@@ -687,6 +761,11 @@ async def queue_picks(interaction: discord.Interaction,
 #command that lets the user clear their list of picks
 @bot.tree.command(name="clear_picks", description="Clears any picks that you currently have in queue.")
 async def clear_picks(interaction: discord.Interaction):
+    '''
+    function that allows the user to clear their picks
+
+    takes no parameters and returns nothing
+    '''
     #check what channel this draft is affilliated with
     passed,draft = validation_check(interaction)
     if passed:
@@ -701,6 +780,11 @@ async def clear_picks(interaction: discord.Interaction):
 #command that shows the user their current picks
 @bot.tree.command(name="get_my_picks", description="Gets what current picks you have.")
 async def get_my_picks(interaction: discord.Interaction):
+    '''
+    function that allows the user to see what picks they currently have
+
+    takes no parameters and returns nothing
+    '''
     #check what channel this draft is affilliated with
     passed,draft = validation_check(interaction)
     if passed:
@@ -713,6 +797,11 @@ async def get_my_picks(interaction: discord.Interaction):
 #command that shows the user their current queue
 @bot.tree.command(name="get_my_queue", description="Shows your current picks that are in your queue.")
 async def get_my_queue(interaction: discord.Interaction):
+    '''
+    function that allows the user to see what picks are currently in their queue
+
+    takes no parameters and returns nothing
+    '''
     passed,draft = validation_check(interaction)
     if passed:
         #get the picks
@@ -724,11 +813,20 @@ async def get_my_queue(interaction: discord.Interaction):
 #command that shows the user all of the available picks
 @bot.tree.command(name="get_available_picks", description="Tells user what picks they have available.")
 async def get_available_picks(interaction: discord.Interaction):
+    '''
+    function that allows the user to see what picks are available
+
+    takes no parameters and returns nothing
+    '''
     #get what channel command was sent in, and the user id
     passed,draft = validation_check(interaction)
     if passed:
         #make a new list of team strings so we don't mutate the draft's internal list
         picks = [str(p) for p in list(drafts[draft].get_teams())]
+        #remove the picks that have 0 remaining picks
+        for team in list(picks):
+            if drafts[draft].teams.get(team, 0) == 0:
+                picks.remove(team)
         #embed function for teams
         def team_embed(items, page, total_pages):
             embed = discord.Embed(
@@ -750,6 +848,11 @@ async def get_available_picks(interaction: discord.Interaction):
 #command that shows the user all of the available picks
 @bot.tree.command(name="get_draft_image", description="Shows the user an image of the current draft.")
 async def get_draft_image(interaction: discord.Interaction):
+    '''
+    function that sends the user an image of the current draft
+
+    takes no parameters and returns nothing
+    '''
     #get what channel command was sent in, and the user id
     passed,draft = validation_check(interaction)
     if passed:
