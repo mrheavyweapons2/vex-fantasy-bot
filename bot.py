@@ -10,12 +10,12 @@ update roadmap:
 
 -allow a way for people to pick for themselves after the draft bot has skipped them
 
--allow the draft bot to handle simultaneous picking in the draft order
-    -(meaning if person 1 is taking forever, person 2 can pick while waiting, if there is 2 or more remaining picks for a team)
-
 -begin to allow the bot to tell time
     -allow draft admins to set a minimum time limit
     -have the bot automatically skip turns or random pick if the time limit is exceeded
+
+-allow the draft bot to handle simultaneous picking in the draft order
+    -(meaning if person 1 is taking forever, person 2 can pick while waiting, if there is 2 or more remaining picks for a team)
 
 -rewrite some code to be more efficient and cleaner if need be
 
@@ -628,6 +628,12 @@ async def force_pick(interaction: discord.Interaction,
         if drafts[draft].channel == interaction.channel:
             #this is the draft, validate the participant
             if drafts[draft].validate_participant(target.id) == True:
+                #if the team is "random", pick a random team
+                if pick == "random":
+                    pick = drafts[draft].pick_random(target.id)
+                    if not pick:
+                        await interaction.followup.send(f"No Available Teams to Pick.",ephemeral=True)
+                        return
                 #if rounds is none, just add their pick to the queue
                 if (round == None) or (round == drafts[draft].current_round):
                     if drafts[draft].pick_one(target.id,pick):
@@ -710,6 +716,7 @@ USER COMMANDS
     -help (shows the user the available commands)
     -pick (add a single pick to your pick queue)
     -pick_multiple (add multiple picks to your pick queue)
+    -pick_random (adds a random pick to your pick queue)
     -clear_picks (clears the picks from the user)
     -get_my_queue (shows the user their current queue of picks)
     -get_available_picks (shows the user all of the available picks)
@@ -727,6 +734,7 @@ async def help(interaction: discord.Interaction):
         "**Available Commands:**\n"
         "/pick [team]: Add a single pick to your pick queue.\n"
         "/pick_multiple [team1] [team2] [team3] [team4]: Add multiple picks (up to 4) to your pick queue.\n"
+        "/pick_random: Adds a random pick to your pick queue.\n"
         "/clear_picks: Clears any picks that you currently have in queue.\n"
         "/get_my_picks: Gets what current picks you have that have been processed.\n"
         "/get_my_queue: Shows your current picks that are in your queue.\n"
@@ -797,6 +805,26 @@ async def pick_multiple(interaction: discord.Interaction,
             await interaction.response.send_message("Teams or Player is not available.", ephemeral=True)
         return
     await interaction.response.send_message("You do not have permission to use this command.",ephemeral=True)
+
+#command that lets the user pick a random available team
+@bot.tree.command(name="pick_random", description="Adds a random pick to your pick queue.")
+async def pick_random(interaction: discord.Interaction):
+    '''
+    function that allows the user to pick a random team to add to their pick queue
+
+    takes no parameters and returns nothing
+    '''
+    #check what channel this draft is affilliated with
+    passed,draft = validation_check(interaction)
+    if passed:
+        #put the pick in their queue
+        team = drafts[draft].pick_random(interaction.user.id)
+        if team:
+            await interaction.response.send_message(f"{team} Chosen.",ephemeral=False)
+        else:
+            await interaction.response.send_message(f"No Available Teams to Pick. (oh no, contact bor admin)",ephemeral=False)
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 
 #command that lets the user clear their list of picks
 @bot.tree.command(name="clear_picks", description="Clears any picks that you currently have in queue.")

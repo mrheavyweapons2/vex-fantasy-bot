@@ -232,6 +232,25 @@ class Draft:
                         success = False
         #return false if found is false, otherwise true
         return success
+    
+    #function to pick a random team for a player
+    def pick_random(self, player_id):
+        success = False
+        #get a list of available teams
+        available_teams = [team["team"] for team in self.teams if team.get("picks_remaining", 0) > 0]
+        if not available_teams:
+            return False
+        #pick a random team from the available teams
+        random_pick = random.choice(available_teams)
+        if self.clear_picks(player_id):
+            #put the random pick in the players queue
+            for player_data in self.draft_data:
+                if player_data["id"] == player_id:
+                    player_data["queue_1"] = random_pick
+                    player_data["double_pick"] = False
+                    success = True
+                    break
+        return success
 
     #function to add more teams to a players queue
     def pick_multiple(self, player_id, picks):
