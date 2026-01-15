@@ -40,7 +40,7 @@ class Draft:
         #other draft memory and data
         self.draft_data = []
         self.current_position = current_position #the current position the draft is on
-        self.time_limit_min = None #amount of time (in minutes) before the person is skipped automatically
+        self.time_limit_min = 0 #amount of time (in minutes) before the person is skipped automatically
         self.skip_check = False #will skip the current persons turn if set to true
         self.total_participants = 0 #the total number of participants in the draft
         #generate a random seed or set it

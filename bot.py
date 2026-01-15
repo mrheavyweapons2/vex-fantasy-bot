@@ -5,6 +5,25 @@ Author: Jeremiah Nairn
 Description: This is a fantasy draft bot built specificly for vex and robotevents.
 """
 
+'''
+update roadmap:
+
+-allow a way for people to pick for themselves after the draft bot has skipped them
+
+-allow the draft bot to handle simultaneous picking in the draft order
+    -(meaning if person 1 is taking forever, person 2 can pick while waiting, if there is 2 or more remaining picks for a team)
+
+-begin to allow the bot to tell time
+    -allow draft admins to set a minimum time limit
+    -have the bot automatically skip turns or random pick if the time limit is exceeded
+
+-rewrite some code to be more efficient and cleaner if need be
+
+-fix any bugs that arise from testing and usage post release 2.0
+    
+-begin drafting the scoring system into the bot (will come after release 2.0)
+'''
+
 #import draft
 from manager import draft
 #import excel
@@ -184,11 +203,12 @@ def run_draft(draft_instance,bot):
             position_in_round = draft_instance.total_participants - 1 - index_in_round
         #return both values
         return round_number+1, position_in_round
-    #go through each round
+    #go through each round (real position is where the draft currently is based on total participants and rounds, and not on snake position)
     for real_position in range(draft_instance.total_participants*draft_instance.round_limit):
-        #math out the current round and position
+        #use the helper function to get the current round and snake position for the main player
         round, draft_instance.current_position = get_snake_position(real_position)
         for drafter in drafters:
+            #identify the drafter who is in this position
             if drafter["position"] == draft_instance.current_position:
                 #debouncer
                 debounce = True
@@ -199,7 +219,7 @@ def run_draft(draft_instance,bot):
                         draft_instance.skip_check = False
                         print(f"[BOT] [FROM {draft_instance.draft_name}] Turn Skipped.")
                         break
-                    #ping who is up, who is on deck, and who is in the hole (only once per turn)
+                    #ping who is up, who is on deck, and who is in the2 hole (only once per turn)
                     if debounce:
                         debounce = False  
                         #get the ids of the three players
@@ -687,12 +707,32 @@ async def remove_team(interaction: discord.Interaction,
 
 """
 USER COMMANDS
+    -help (shows the user the available commands)
     -pick (add a single pick to your pick queue)
     -pick_multiple (add multiple picks to your pick queue)
     -clear_picks (clears the picks from the user)
     -get_my_queue (shows the user their current queue of picks)
     -get_available_picks (shows the user all of the available picks)
 """
+
+#command that shows the user all of the available commands
+@bot.tree.command(name="help", description="Shows the available commands")
+async def help(interaction: discord.Interaction):
+    '''
+    function that shows the user all of the available commands
+
+    takes no parameters and returns nothing
+    '''
+    help_msg = (
+        "**Available Commands:**\n"
+        "/pick [team]: Add a single pick to your pick queue.\n"
+        "/pick_multiple [team1] [team2] [team3] [team4]: Add multiple picks (up to 4) to your pick queue.\n"
+        "/clear_picks: Clears any picks that you currently have in queue.\n"
+        "/get_my_picks: Gets what current picks you have that have been processed.\n"
+        "/get_my_queue: Shows your current picks that are in your queue.\n"
+        "/get_available_picks: Shows all of the available picks."
+    )
+    await interaction.response.send_message(help_msg, ephemeral=True)
 
 #command that lets the user pick one bot
 @bot.tree.command(name="pick", description="add a single pick to your pick queue")
