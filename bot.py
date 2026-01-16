@@ -13,6 +13,7 @@ update roadmap:
 -begin to allow the bot to tell time
     -allow draft admins to set a minimum time limit
     -have the bot automatically skip turns or random pick if the time limit is exceeded
+    -implement a downtime where the bot will not skip turns
 
 -allow the draft bot to handle simultaneous picking in the draft order
     -(meaning if person 1 is taking forever, person 2 can pick while waiting, if there is 2 or more remaining picks for a team)
@@ -219,6 +220,15 @@ def run_draft(draft_instance,bot):
                         draft_instance.skip_check = False
                         print(f"[BOT] [FROM {draft_instance.draft_name}] Turn Skipped.")
                         break
+                    #check and see if the time limit has been exceeded
+                    if draft_instance.time_limit_min > 0:
+                        current_time = time.time()
+                        elapsed_time = (current_time - draft_instance.time_memory) / 60  # convert to minutes
+                        if elapsed_time >= draft_instance.time_limit_min:
+                            print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
+                            #random pick for the drafter
+                            draft_instance.pick_random(drafter["id"])
+                            break
                     #ping who is up, who is on deck, and who is in the2 hole (only once per turn)
                     if debounce:
                         debounce = False  
@@ -233,6 +243,9 @@ def run_draft(draft_instance,bot):
                             if next_drafter["position"] == drafter_pos:
                                 in_hole = next_drafter["id"]
                         msg = f"UP NOW: <@{now_up}>\nON DECK: <@{on_deck}>\nIN THE HOLE: <@{in_hole}>"
+                        #log the current time
+                        if draft_instance.time_limit_min > 0:
+                            draft_instance.time_memory = time.time()
                         #schedule the send on the bot event loop from this worker thread
                         if getattr(draft_instance, "channel", None) is not None:
                             asyncio.run_coroutine_threadsafe(
@@ -450,7 +463,8 @@ async def announce_draft(interaction: discord.Interaction,
 async def start_draft(interaction: discord.Interaction,
     draft_object: str,
     draft_channel: discord.TextChannel,
-    min_time_limit: int = None
+    min_time_limit: int = 0,
+    timer_warning: int = 0
     ):
     '''
     function that starts the draft instance, and creates a thread for the draft function to run in
@@ -459,7 +473,9 @@ async def start_draft(interaction: discord.Interaction,
     :type draft_object: str
     :param draft_channel: the discord text channel to start the draft in
     :type draft_channel: discord.TextChannel
-    :param min_time_limit: the minimum time limit for the draft (optional field, defaults to None)
+    :param min_time_limit: the minimum time limit for the draft (optional field, defaults to 0)
+    :type min_time_limit: int
+    :param timer_warning: the time before a warning is given (optional field, defaults to 0)
     :type min_time_limit: int
     '''
     await interaction.response.defer()
@@ -484,6 +500,9 @@ async def start_draft(interaction: discord.Interaction,
     drafts[draft_object].excel_manager = excel.ExcelManager(f"{drafts[draft_object].draft_name}_draft", drafts[draft_object].draft_data,
                                                             drafts[draft_object].round_limit, drafts[draft_object].total_participants)
     drafts[draft_object].excel_manager.create_draft_sheet()
+    #set the time limit
+    drafts[draft_object].time_limit_min = min_time_limit
+    drafts[draft_object].timer_warning = timer_warning
     #send an initial message to the channel
     try:
         await draft_channel.send(f"The {drafts[draft_object].draft_name} draft is starting soon!")
@@ -710,6 +729,32 @@ async def remove_team(interaction: discord.Interaction,
     await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)
     return
 
+#function to set the downtime for the draft
+@bot.tree.command(name="set_downtime", description="Sets the downtime for the draft")
+async def set_downtime(interaction: discord.Interaction, downtime_start: int, downtime_end: int):
+    '''
+    function that sets the downtime for the current draft instance
+
+    :param downtime_start: the hour to start downtime (0-23)
+    :type downtime_start: int
+    :param downtime_end: the hour to end downtime (0-23)
+    :type downtime_end: int
+    '''
+    #defer the response
+    await interaction.response.defer()
+    #permission check
+    if not is_admin(interaction):
+        await interaction.followup.send("You do not have permission to use this command.",ephemeral=True)
+        return
+    #check what channel they are in and get the discord user
+    for draft in drafts:
+        if drafts[draft].channel == interaction.channel:
+            drafts[draft].set_downtime(downtime_start, downtime_end)
+            await interaction.followup.send(f"Downtime set from {downtime_start}:00 to {downtime_end}:00.",ephemeral=True)
+            return
+    #if there is no draft to affiliate with
+    await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)
+    return
 
 """
 USER COMMANDS

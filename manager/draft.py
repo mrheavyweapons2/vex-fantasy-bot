@@ -41,6 +41,10 @@ class Draft:
         self.draft_data = []
         self.current_position = current_position #the current position the draft is on
         self.time_limit_min = 0 #amount of time (in minutes) before the person is skipped automatically
+        self.time_memory = 0 #the time remembered for when the current drafters turn started
+        self.timer_warning = 0 #when the bot will give the user a warning (in minutes)
+        self.downtime_start = 0 #the start time of the downtime period for skipping
+        self.downtime_end = 0 #the end time of the downtime period for skipping
         self.skip_check = False #will skip the current persons turn if set to true
         self.total_participants = 0 #the total number of participants in the draft
         #generate a random seed or set it
