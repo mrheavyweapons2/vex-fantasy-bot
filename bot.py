@@ -236,11 +236,12 @@ def run_draft(draft_instance,bot):
                                     )
                             if draft_instance.is_in_downtime():
                                 #in downtime, do not skip
-                                continue
-                            print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
-                            #random pick for the drafter
-                            draft_instance.pick_random(drafter["id"])
-                            break
+                                pass
+                            else:
+                                print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
+                                #random pick for the drafter
+                                draft_instance.pick_random(drafter["id"])
+                                break
                     #ping who is up, who is on deck, and who is in the2 hole (only once per turn)
                     if debounce:
                         debounce = False  
@@ -736,6 +737,35 @@ async def remove_team(interaction: discord.Interaction,
                 await interaction.followup.send(f"{team} removed from draft.",ephemeral=True)
             else:
                 await interaction.followup.send("Error while removing team.",ephemeral=True)
+            return
+    #if there is no draft to affiliate with
+    await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)
+    return
+
+#function to set the downtime for the draft
+@bot.tree.command(name="set_skip_timing", description="Sets the timing for the skips in the draft")
+async def set_skip_timing(interaction: discord.Interaction, min_time_limit: int, timer_warning: int):
+    '''
+    function that sets the downtime for the current draft instance
+
+    :param min_time_limit: the minimum time limit before a user is skipped (optional field, defaults to 0)
+    :type min_time_limit: int
+    :param timer_warning: the time before a warning is given (optional field, defaults to 0)
+    :type min_time_limit: int
+    '''
+    #defer the response
+    await interaction.response.defer()
+    #permission check
+    if not is_admin(interaction):
+        await interaction.followup.send("You do not have permission to use this command.",ephemeral=True)
+        return
+    #check what channel they are in and get the discord user
+    for draft in drafts:
+        if drafts[draft].channel == interaction.channel:
+            #set the time limit
+            drafts[draft].time_limit_min = min_time_limit
+            drafts[draft].timer_warning = timer_warning
+            await interaction.followup.send(f"Skip timing set to {min_time_limit} minutes with warning at {timer_warning} minutes.",ephemeral=True)
             return
     #if there is no draft to affiliate with
     await interaction.followup.send(f"Channel is not affiliated with a draft.",ephemeral=True)

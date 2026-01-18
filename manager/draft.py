@@ -118,13 +118,13 @@ class Draft:
 
     #function to determine if the programs skips are in downtime
     def is_in_downtime(self):
-        if self.downtime_start is None or self.downtime_end is None:
+        if self.skip_downtime_start is None or self.skip_downtime_end is None:
             return False
         current_hour = time.localtime().tm_hour
-        if self.downtime_start < self.downtime_end:
-            return self.downtime_start <= current_hour < self.downtime_end
+        if self.skip_downtime_start < self.skip_downtime_end:
+            return self.skip_downtime_start <= current_hour < self.skip_downtime_end
         else:
-            return current_hour >= self.downtime_start or current_hour < self.downtime_end
+            return current_hour >= self.skip_downtime_start or current_hour < self.skip_downtime_end
         
     #function to see if the time remaining has passed the warning timestamp
     def should_warn(self):
