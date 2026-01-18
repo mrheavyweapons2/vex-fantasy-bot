@@ -213,6 +213,7 @@ def run_draft(draft_instance,bot):
             if drafter["position"] == draft_instance.current_position:
                 #debouncer
                 debounce = True
+                warningDebounce = True
                 #check and see if their queue can be processed
                 while not draft_instance.process_pick(draft_instance.current_position,round):
                     #check if skip has been requested
@@ -225,6 +226,14 @@ def run_draft(draft_instance,bot):
                         current_time = time.time()
                         elapsed_time = (current_time - draft_instance.time_memory) / 60  # convert to minutes
                         if elapsed_time >= draft_instance.time_limit_min:
+                            #warn the user if they pass the warning time in minutes
+                            if warningDebounce and draft_instance.should_warn():
+                                warningDebounce = False
+                                if getattr(draft_instance, "channel", None) is not None:
+                                    asyncio.run_coroutine_threadsafe(
+                                        draft_instance.channel.send(f"<@{now_up}> has {draft_instance.timer_warning} minutes before they are skipped."),
+                                        draft_instance.bot.loop
+                                    )
                             if draft_instance.is_in_downtime():
                                 #in downtime, do not skip
                                 continue
@@ -467,7 +476,7 @@ async def start_draft(interaction: discord.Interaction,
     draft_object: str,
     draft_channel: discord.TextChannel,
     min_time_limit: int = 0,
-    timer_warning: int = 0
+    timer_warning: int = 5
     ):
     '''
     function that starts the draft instance, and creates a thread for the draft function to run in
@@ -476,7 +485,7 @@ async def start_draft(interaction: discord.Interaction,
     :type draft_object: str
     :param draft_channel: the discord text channel to start the draft in
     :type draft_channel: discord.TextChannel
-    :param min_time_limit: the minimum time limit for the draft (optional field, defaults to 0)
+    :param min_time_limit: the minimum time limit before a user is skipped (optional field, defaults to 0)
     :type min_time_limit: int
     :param timer_warning: the time before a warning is given (optional field, defaults to 0)
     :type min_time_limit: int

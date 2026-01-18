@@ -125,6 +125,15 @@ class Draft:
             return self.downtime_start <= current_hour < self.downtime_end
         else:
             return current_hour >= self.downtime_start or current_hour < self.downtime_end
+        
+    #function to see if the time remaining has passed the warning timestamp
+    def should_warn(self):
+        if self.time_limit_min == 0:
+            return False
+        time_elapsed = time.time() - self.time_memory
+        warning_time = self.timer_warning * 60
+        time_limit = self.time_limit_min * 60
+        return warning_time <= time_elapsed < time_limit
 
     #function to return the team data
     def get_teams(self):
