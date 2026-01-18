@@ -7,6 +7,7 @@ Description: Holds all of the functionality for processing the drafts
 
 #importing csv for a savedata file
 import csv
+import time
 import os
 import random
 import sys
@@ -43,8 +44,8 @@ class Draft:
         self.time_limit_min = 0 #amount of time (in minutes) before the person is skipped automatically
         self.time_memory = 0 #the time remembered for when the current drafters turn started
         self.timer_warning = 0 #when the bot will give the user a warning (in minutes)
-        self.downtime_start = 0 #the start time of the downtime period for skipping
-        self.downtime_end = 0 #the end time of the downtime period for skipping
+        self.skip_downtime_start = 0 #the start time of the downtime period for skipping
+        self.skip_downtime_end = 0 #the end time of the downtime period for skipping
         self.skip_check = False #will skip the current persons turn if set to true
         self.total_participants = 0 #the total number of participants in the draft
         #generate a random seed or set it
@@ -108,10 +109,27 @@ class Draft:
     def get_announcement_id(self):
         return self.announcement_id, self.emoji, self.announce_channel
     
+    #function to set the downtime
+    def set_downtime(self, downtime_start, downtime_end):
+        #set the downtime in the object
+        self.skip_downtime_start = downtime_start
+        self.skip_downtime_end = downtime_end
+        pass
+
+    #function to determine if the programs skips are in downtime
+    def is_in_downtime(self):
+        if self.downtime_start is None or self.downtime_end is None:
+            return False
+        current_hour = time.localtime().tm_hour
+        if self.downtime_start < self.downtime_end:
+            return self.downtime_start <= current_hour < self.downtime_end
+        else:
+            return current_hour >= self.downtime_start or current_hour < self.downtime_end
+
     #function to return the team data
     def get_teams(self):
         return self.teams
-    
+
     #function to return the queue data
     def get_queue(self, player_id):
         for player_data in self.draft_data:

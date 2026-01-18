@@ -225,6 +225,9 @@ def run_draft(draft_instance,bot):
                         current_time = time.time()
                         elapsed_time = (current_time - draft_instance.time_memory) / 60  # convert to minutes
                         if elapsed_time >= draft_instance.time_limit_min:
+                            if draft_instance.is_in_downtime():
+                                #in downtime, do not skip
+                                continue
                             print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
                             #random pick for the drafter
                             draft_instance.pick_random(drafter["id"])
@@ -252,7 +255,7 @@ def run_draft(draft_instance,bot):
                                 draft_instance.channel.send(msg),
                                 draft_instance.bot.loop
                             )
-                    time.sleep(1)
+                    time.sleep(2)
                 pass
     #print that the draft has finished
     asyncio.run_coroutine_threadsafe(
@@ -730,7 +733,7 @@ async def remove_team(interaction: discord.Interaction,
     return
 
 #function to set the downtime for the draft
-@bot.tree.command(name="set_downtime", description="Sets the downtime for the draft")
+@bot.tree.command(name="set_skip_downtime", description="Sets the downtime for the draft")
 async def set_downtime(interaction: discord.Interaction, downtime_start: int, downtime_end: int):
     '''
     function that sets the downtime for the current draft instance
