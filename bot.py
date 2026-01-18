@@ -204,6 +204,8 @@ def run_draft(draft_instance,bot):
             position_in_round = draft_instance.total_participants - 1 - index_in_round
         #return both values
         return round_number+1, position_in_round
+    #set now_up to none
+    now_up = None
     #go through each round (real position is where the draft currently is based on total participants and rounds, and not on snake position)
     for real_position in range(draft_instance.total_participants*draft_instance.round_limit):
         #use the helper function to get the current round and snake position for the main player
@@ -222,22 +224,29 @@ def run_draft(draft_instance,bot):
                         print(f"[BOT] [FROM {draft_instance.draft_name}] Turn Skipped.")
                         break
                     #check and see if the time limit has been exceeded
-                    if draft_instance.time_limit_min > 0:
+                    if draft_instance.time_limit_min > 0 and now_up != None:
+                        print("time is greater")
                         current_time = time.time()
-                        elapsed_time = (current_time - draft_instance.time_memory) / 60  # convert to minutes
-                        if elapsed_time >= draft_instance.time_limit_min:
-                            #warn the user if they pass the warning time in minutes
-                            if warningDebounce and draft_instance.should_warn():
+                        #get the time remaining in minutes
+                        time_remaining = ((draft_instance.time_memory+(draft_instance.time_limit_min*60))-current_time)/60
+                        print(time_remaining)
+                        #warn the user if they pass the warning time threshold in minutes
+                        if warningDebounce and (time_remaining <= draft_instance.timer_warning):
+                                print(f"[BOT] Sending warning to {now_up} before they are skipped.")
                                 warningDebounce = False
                                 if getattr(draft_instance, "channel", None) is not None:
                                     asyncio.run_coroutine_threadsafe(
                                         draft_instance.channel.send(f"<@{now_up}> has {draft_instance.timer_warning} minutes before they are skipped."),
                                         draft_instance.bot.loop
                                     )
+                        if time_remaining <= 0:
+                            print("time limit exceeded")
                             if draft_instance.is_in_downtime():
+                                print("in downtime")
                                 #in downtime, do not skip
                                 pass
                             else:
+                                print("skipping")
                                 print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
                                 #random pick for the drafter
                                 draft_instance.pick_random(drafter["id"])
@@ -907,7 +916,7 @@ async def pick_random(interaction: discord.Interaction):
         #put the pick in their queue
         team = drafts[draft].pick_random(interaction.user.id)
         if team:
-            await interaction.response.send_message(f"{team} Chosen.",ephemeral=False)
+            await interaction.response.send_message(f"{team} Chosen via random pick.",ephemeral=False)
         else:
             await interaction.response.send_message(f"No Available Teams to Pick. (oh no, contact bor admin)",ephemeral=False)
         return    
@@ -977,11 +986,13 @@ async def get_available_picks(interaction: discord.Interaction):
     passed,draft = validation_check(interaction)
     if passed:
         #make a new list of team strings so we don't mutate the draft's internal list
-        picks = [str(p) for p in list(drafts[draft].get_teams())]
+        teams = drafts[draft].get_teams()
+        #make an empty list
+        picks = []
         #remove the picks that have 0 remaining picks
-        for team in list(picks):
-            if drafts[draft].teams.get(team, 0) == 0:
-                picks.remove(team)
+        for team in teams:
+            if not team["picks_remaining"] == 0:
+                picks.append(f"{team["team"]}, {team["picks_remaining"]} pick remaining")
         #embed function for teams
         def team_embed(items, page, total_pages):
             embed = discord.Embed(

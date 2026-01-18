@@ -118,22 +118,13 @@ class Draft:
 
     #function to determine if the programs skips are in downtime
     def is_in_downtime(self):
-        if self.skip_downtime_start is None or self.skip_downtime_end is None:
+        if self.skip_downtime_start is 0 or self.skip_downtime_end is 0:
             return False
         current_hour = time.localtime().tm_hour
         if self.skip_downtime_start < self.skip_downtime_end:
             return self.skip_downtime_start <= current_hour < self.skip_downtime_end
         else:
             return current_hour >= self.skip_downtime_start or current_hour < self.skip_downtime_end
-        
-    #function to see if the time remaining has passed the warning timestamp
-    def should_warn(self):
-        if self.time_limit_min == 0:
-            return False
-        time_elapsed = time.time() - self.time_memory
-        warning_time = self.timer_warning * 60
-        time_limit = self.time_limit_min * 60
-        return warning_time <= time_elapsed < time_limit
 
     #function to return the team data
     def get_teams(self):
