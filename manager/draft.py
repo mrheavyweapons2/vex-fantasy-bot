@@ -119,7 +119,7 @@ class Draft:
 
     #function to determine if the programs skips are in downtime
     def is_in_downtime(self):
-        if self.skip_downtime_start is 0 or self.skip_downtime_end is 0:
+        if self.skip_downtime_start == 0 or self.skip_downtime_end == 0:
             return False
         current_hour = time.localtime().tm_hour
         if self.skip_downtime_start < self.skip_downtime_end:
