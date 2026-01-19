@@ -1016,7 +1016,7 @@ async def get_available_picks(interaction: discord.Interaction):
         #remove the picks that have 0 remaining picks
         for team in teams:
             if not team["picks_remaining"] == 0:
-                picks.append(f"{team["team"]}, {team["picks_remaining"]} pick remaining")
+                picks.append(f'{team["team"]}, {team["picks_remaining"]} pick remaining')
         #embed function for teams
         def team_embed(items, page, total_pages):
             embed = discord.Embed(
