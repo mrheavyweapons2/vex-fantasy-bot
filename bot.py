@@ -208,6 +208,7 @@ def run_draft(draft_instance,bot):
     now_up = None
     #go through each round (real position is where the draft currently is based on total participants and rounds, and not on snake position)
     for real_position in range(draft_instance.total_participants*draft_instance.round_limit):
+        draft_instance.real_position = real_position
         #use the helper function to get the current round and snake position for the main player
         round, draft_instance.current_position = get_snake_position(real_position)
         for drafter in drafters:
@@ -216,6 +217,8 @@ def run_draft(draft_instance,bot):
                 #debouncer
                 debounce = True
                 warningDebounce = True
+                #set the time memory
+                draft_instance.time_memory = time.time()
                 #check and see if their queue can be processed
                 while not draft_instance.process_pick(draft_instance.current_position,round):
                     #check if skip has been requested
@@ -225,11 +228,9 @@ def run_draft(draft_instance,bot):
                         break
                     #check and see if the time limit has been exceeded
                     if draft_instance.time_limit_min > 0 and now_up != None:
-                        print("time is greater")
                         current_time = time.time()
                         #get the time remaining in minutes
                         time_remaining = ((draft_instance.time_memory+(draft_instance.time_limit_min*60))-current_time)/60
-                        print(time_remaining)
                         #warn the user if they pass the warning time threshold in minutes
                         if warningDebounce and (time_remaining <= draft_instance.timer_warning):
                                 print(f"[BOT] Sending warning to {now_up} before they are skipped.")
@@ -240,17 +241,13 @@ def run_draft(draft_instance,bot):
                                         draft_instance.bot.loop
                                     )
                         if time_remaining <= 0:
-                            print("time limit exceeded")
                             if draft_instance.is_in_downtime():
-                                print("in downtime")
                                 #in downtime, do not skip
                                 pass
                             else:
-                                print("skipping")
                                 print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
                                 #random pick for the drafter
                                 draft_instance.pick_random(drafter["id"])
-                                break
                     #ping who is up, who is on deck, and who is in the2 hole (only once per turn)
                     if debounce:
                         debounce = False  
@@ -265,9 +262,6 @@ def run_draft(draft_instance,bot):
                             if next_drafter["position"] == drafter_pos:
                                 in_hole = next_drafter["id"]
                         msg = f"UP NOW: <@{now_up}>\nON DECK: <@{on_deck}>\nIN THE HOLE: <@{in_hole}>"
-                        #log the current time
-                        if draft_instance.time_limit_min > 0:
-                            draft_instance.time_memory = time.time()
                         #schedule the send on the bot event loop from this worker thread
                         if getattr(draft_instance, "channel", None) is not None:
                             asyncio.run_coroutine_threadsafe(
@@ -275,7 +269,12 @@ def run_draft(draft_instance,bot):
                                 draft_instance.bot.loop
                             )
                     time.sleep(2)
-                pass
+                #tell people what each person has picked
+                if getattr(draft_instance, "channel", None) is not None:
+                    asyncio.run_coroutine_threadsafe(
+                        draft_instance.channel.send(f"<@{drafter['id']}> has picked {(draft_instance.get_picks(drafter['id']))[round-1]}"),
+                        draft_instance.bot.loop
+                    )
     #print that the draft has finished
     asyncio.run_coroutine_threadsafe(
         draft_instance.channel.send("Draft has Finished."),
@@ -417,8 +416,6 @@ async def create_draft(interaction: discord.Interaction,
     #creates the draft object
     new_draft = draft.Draft(draft_object, draft_rounds, draft_limit, draft_sku, bot)
     drafts[draft_object] = new_draft
-    #acknowledge the interaction immediately to avoid token expiry while we do network/IO work
-    await interaction.response.defer()
     #save the sku to the draft
     new_draft.draft_sku = draft_sku
     #send the draft creation confirmation
@@ -429,7 +426,7 @@ async def create_draft(interaction: discord.Interaction,
         f'Event SKU: {draft_sku}\n'
         f'Limit: {draft_limit}'
     )
-    await interaction.followup.send(msg)
+    await interaction.response.send_message(msg)
     #save the draft as is
     new_draft.save_draft()
 
@@ -814,6 +811,7 @@ USER COMMANDS
     -pick_multiple (add multiple picks to your pick queue)
     -pick_random (adds a random pick to your pick queue)
     -clear_picks (clears the picks from the user)
+    -fulfil_skipped_pick (if you were skipped, you would use this to pick)
     -get_my_queue (shows the user their current queue of picks)
     -get_available_picks (shows the user all of the available picks)
 """
@@ -832,6 +830,7 @@ async def help(interaction: discord.Interaction):
         "/pick_multiple [team1] [team2] [team3] [team4]: Add multiple picks (up to 4) to your pick queue.\n"
         "/pick_random: Adds a random pick to your pick queue.\n"
         "/clear_picks: Clears any picks that you currently have in queue.\n"
+        "/fulfil_skipped_pick: If you were skipped, you would use this to pick.\n"
         "/get_my_picks: Gets what current picks you have that have been processed.\n"
         "/get_my_queue: Shows your current picks that are in your queue.\n"
         "/get_available_picks: Shows all of the available picks."
@@ -914,9 +913,8 @@ async def pick_random(interaction: discord.Interaction):
     passed,draft = validation_check(interaction)
     if passed:
         #put the pick in their queue
-        team = drafts[draft].pick_random(interaction.user.id)
-        if team:
-            await interaction.response.send_message(f"{team} Chosen via random pick.",ephemeral=False)
+        if drafts[draft].pick_random(interaction.user.id):
+            await interaction.response.send_message(f"https://tenor.com/view/rolling-a-twelve-twelve-dice-roll-gif-26906738",ephemeral=False)
         else:
             await interaction.response.send_message(f"No Available Teams to Pick. (oh no, contact bor admin)",ephemeral=False)
         return    
@@ -938,6 +936,32 @@ async def clear_picks(interaction: discord.Interaction):
             await interaction.response.send_message(f"Picks Cleared",ephemeral=True)
         else:
             await interaction.response.send_message(f"Error While Clearing Picks",ephemeral=True)
+        return    
+    await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
+
+#command to fulfil skipped picks
+@bot.tree.command(name="fulfill_skipped_pick", description="command to allow you to pick for a past pick incase it was skipped")
+async def fulfill_skipped_pick(interaction: discord.Interaction, team: str):
+    '''
+    function that allows the user to pick a single team to add to their pick queue
+
+    :param team: the team to use to fulfil a skip
+    :type team: str
+    '''
+    passed,draft = validation_check(interaction)
+    if passed:
+        #check and see if a pick was actually skipped
+        if drafts[draft].needs_skip_fulfilled(interaction.user.id):
+            #fulfil the skipped pick and tell the bot what round it was picked in
+            round = drafts[draft].fulfill_pick_skip(interaction.user.id,team)
+            if round > 0:
+                print(f"[BOT] {interaction.user.id} has fulfilled their skipped pick for round {round}.")
+                await interaction.response.send_message(f"Chosen {team} for Round {round}",ephemeral=False)
+            else:
+                await interaction.response.send_message(f"Team is not available or is invalid.",ephemeral=False)
+            return
+        else:
+            await interaction.response.send_message(f"You have no skipped picks to fulfill",ephemeral=True)
         return    
     await interaction.response.send_message(f"You do not have permission to use this command.",ephemeral=True)
 

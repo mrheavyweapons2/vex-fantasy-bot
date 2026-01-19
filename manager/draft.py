@@ -41,6 +41,7 @@ class Draft:
         #other draft memory and data
         self.draft_data = []
         self.current_position = current_position #the current position the draft is on
+        self.real_position = 0 #the actual position of the bot
         self.time_limit_min = 0 #amount of time (in minutes) before the person is skipped automatically
         self.time_memory = 0 #the time remembered for when the current drafters turn started
         self.timer_warning = 0 #when the bot will give the user a warning (in minutes)
@@ -348,3 +349,55 @@ class Draft:
                 for r in range(self.round_limit):
                     picks.append(player_data[f"round_{r+1}"])
                 return picks
+            
+        #helper function thats only used in the below 2 functions to get the real position of the draft
+    def get_real_position(self, round_number, position_in_round):
+        """
+        returns the absolute pick number (starting at 0) for a given
+        snake-style round and position.
+
+        :param round_number: the round number (starting at 1)
+        :type round_number: int
+        :param position_in_round: the draft position within the round (starting at 0)
+        :type position_in_round: int
+        :return: real_position
+        """
+        # convert to 0-based round index
+        round_index = round_number - 1
+        if round_index % 2 == 0:
+            # normal order
+            index_in_round = position_in_round
+        else:
+            # reversed order
+            index_in_round = self.total_participants-1 - position_in_round
+
+        real_position = round_index * self.total_participants + index_in_round
+        return real_position+1
+
+    #function to see if the user has a pick that it needs to fulfil (returns a bool)
+    def needs_skip_fulfilled(self,player_id):
+        #get the player data
+        player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
+        if player_data is None:
+            return False
+        #for each round, check if the pick was skipped
+        for round in range(self.round_limit):
+            if player_data[f"round_{round+1}"] == None and self.get_real_position(round, player_data["position"]) < self.real_position:
+                return True
+        return False
+
+    #function to fulfil a pick if the player was skipped
+    def fulfill_pick_skip(self,player_id,pick):
+            #get the player data
+            player_data = next((pd for pd in self.draft_data if pd.get("id") == player_id), None)
+            if player_data is None:
+                return 0
+            #for each round, check if the pick was skipped
+            for round in range(self.round_limit):
+                if player_data[f"round_{round+1}"] == None and self.get_real_position(round, player_data["position"]) < self.real_position:
+                    #validate the pick and process it
+                    if self.validate_availability(pick):
+                        player_data[f"round_{round+1}"] = pick
+                        return round+1
+                    return 0
+            return 0
