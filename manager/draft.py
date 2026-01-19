@@ -350,8 +350,8 @@ class Draft:
                     picks.append(player_data[f"round_{r+1}"])
                 return picks
             
-        #helper function thats only used in the below 2 functions to get the real position of the draft
-    def get_real_position(self, round_number, position_in_round):
+    #helper function thats only used in the below 2 functions to get the real position of the draft
+    def get_real_position(self, round_number, snake_position):
         """
         returns the absolute pick number (starting at 0) for a given
         snake-style round and position.
@@ -362,17 +362,13 @@ class Draft:
         :type position_in_round: int
         :return: real_position
         """
-        # convert to 0-based round index
-        round_index = round_number - 1
-        if round_index % 2 == 0:
-            # normal order
-            index_in_round = position_in_round
+        #seperate for odd and even parts of the round
+        if round_number % 2 == 0:
+            index_in_round = snake_position
         else:
-            # reversed order
-            index_in_round = self.total_participants-1 - position_in_round
-
-        real_position = round_index * self.total_participants + index_in_round
-        return real_position+1
+            index_in_round = self.total_participants - 1 - snake_position
+        #return the value
+        return round_number * self.total_participants + index_in_round
 
     #function to see if the user has a pick that it needs to fulfil (returns a bool)
     def needs_skip_fulfilled(self,player_id):
