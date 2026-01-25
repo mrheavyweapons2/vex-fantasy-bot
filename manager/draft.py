@@ -394,6 +394,9 @@ class Draft:
                     #validate the pick and process it
                     if self.validate_availability(pick):
                         player_data[f"round_{round+1}"] = pick
+                        #take the pick out of self.teams
+                        team_entry = next((t for t in self.teams if t["team"] == pick), None)
+                        team_entry["picks_remaining"] -= 1
                         return round+1
                     return 0
             return 0

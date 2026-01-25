@@ -275,6 +275,7 @@ def run_draft(draft_instance,bot):
                         draft_instance.channel.send(f"<@{drafter['id']}> has picked {(draft_instance.get_picks(drafter['id']))[round-1]}"),
                         draft_instance.bot.loop
                     )
+                    time.sleep(0.2)
     #print that the draft has finished
     asyncio.run_coroutine_threadsafe(
         draft_instance.channel.send("Draft has Finished."),
