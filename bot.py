@@ -955,6 +955,8 @@ async def fulfill_skipped_pick(interaction: discord.Interaction, team: str):
         if drafts[draft].needs_skip_fulfilled(interaction.user.id):
             #fulfil the skipped pick and tell the bot what round it was picked in
             round = drafts[draft].fulfill_pick_skip(interaction.user.id,team)
+            #upper the pick
+            team = team.upper()
             if round > 0:
                 print(f"[BOT] {interaction.user.id} has fulfilled their skipped pick for round {round}.")
                 await interaction.response.send_message(f"Chosen {team} for Round {round}",ephemeral=False)
