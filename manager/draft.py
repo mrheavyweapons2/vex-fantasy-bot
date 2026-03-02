@@ -185,9 +185,10 @@ class Draft:
     #function to set the draft order
     def set_draft_order(self):
         print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
-        #shuffle the draft data
+        #shuffle the draft data for the amount of participants in the draft, using the seed for consistency
         random.seed(self.seed)
-        random.shuffle(self.draft_data)
+        for _ in range(self.people_limit):
+            self.draft_data = random.shuffle(self.draft_data)
         #set the positions
         for drafter in self.draft_data:
             drafter["position"] = self.total_participants
