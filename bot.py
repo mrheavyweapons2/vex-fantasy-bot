@@ -46,7 +46,6 @@ for i in range(len(ADMIN_BYPASS_IDS)):
 
 #discord imports
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 #import other neccessary modules
@@ -358,6 +357,9 @@ async def on_ready():
                 print(f"[BOT] [FROM {draft_name.upper()}] Draft Loaded Successfully")
     except FileNotFoundError:
         print("[BOT] No Drafts to Load.")
+    except Exception as e:
+        print(f"[BOT] Error Loading Save File, assuming no drafts to load.")
+        print(f"[BOT] Error Details: {e}")
 
 """
 MISC AND TEST COMMANDS
