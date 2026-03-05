@@ -187,7 +187,7 @@ class Draft:
         print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
         #shuffle the draft data for the amount of participants in the draft, using the seed for consistency
         random.seed(self.seed)
-        for _ in range(self.people_limit):
+        for _ in range(self.total_participants):
             self.draft_data = random.shuffle(self.draft_data)
         #set the positions
         for drafter in self.draft_data:

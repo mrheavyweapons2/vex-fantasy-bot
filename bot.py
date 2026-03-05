@@ -389,7 +389,7 @@ async def create_draft(interaction: discord.Interaction,
     draft_object: str,
     draft_sku: str,
     draft_rounds: int,
-    draft_limit: int = None
+    draft_limit: int = 0
     ):
     '''
     function that takes in various parameters and creates a draft instance,
