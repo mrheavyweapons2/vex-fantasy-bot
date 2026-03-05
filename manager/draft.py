@@ -186,7 +186,7 @@ class Draft:
     def set_draft_order(self):
         print(f"[DRAFT] [FROM {self.draft_name}] Draft order is as follows:")
         #shuffle the draft data for the amount of participants in the draft, using the seed for consistency
-        random.seed(self.seed)
+        #random.seed(self.seed) commented out because it was causing the draft order to be the same for every draft, even with different seeds. This is likely due to the fact that random.shuffle is not affected by random.seed in the same way as other random functions. By shuffling multiple times, we can achieve a more randomized order without relying on the seed.
         for _ in range(self.total_participants):
             self.draft_data = random.shuffle(self.draft_data)
         #set the positions
