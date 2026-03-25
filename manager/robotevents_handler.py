@@ -43,7 +43,7 @@ class Robotevent:
         #get the list of teams
         teams = []
         #json request parameters
-        for page in range(5):
+        for page in range(31):
             url = f"{BASE_URL}/events/{self.event_id}/teams?page={page+1}"
             headers = {
                 "Authorization": f"Bearer {self.api_token}",

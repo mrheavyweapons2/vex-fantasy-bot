@@ -246,7 +246,7 @@ def run_draft(draft_instance,bot):
                             else:
                                 print(f"[BOT] [FROM {draft_instance.draft_name}] Time Limit Exceeded. Skipping Turn.")
                                 #random pick for the drafter
-                                draft_instance.pick_random(drafter["id"])
+                                draft_instance.skip_check = True
                     #ping who is up, who is on deck, and who is in the2 hole (only once per turn)
                     if debounce:
                         debounce = False  
