@@ -1,17 +1,17 @@
 """
-File: manager/robotevents_handler.py
+File: manager/vexevents_handler.py
 Author: Jeremiah Nairn
 
-Description: Holds all of the functionality related to the Robotevents API
+Description: Holds all of the functionality related to the Vex Events API
 """
 
 #base url for the robotevents api
-BASE_URL = "https://www.robotevents.com/api/v2"
+BASE_URL = "https://events.vex.com/api/v2"
 
 #imports
 import requests
 
-class Robotevent:
+class VexEvents:
     #constructor
     def __init__(self, name, sku, token):
         #set the variables
@@ -25,8 +25,8 @@ class Robotevent:
 
     def get_event_id(self):
         #json request parameters
-        url = "https://www.robotevents.com/api/v2/events"
-        params = {"sku": {self.event_sku}}
+        url = f"{BASE_URL}/events"
+        params = {"sku": self.event_sku}
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Accept": "application/json"
@@ -36,7 +36,7 @@ class Robotevent:
         data = response.json()
         #pull the event id
         event_id = data["data"][0]["id"]
-        print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Event ID Acquired: {event_id}")
+        print(f"[VEXEVENTS] [FROM {(self.event_name).upper()}] Event ID Acquired: {event_id}")
         return event_id
 
     def get_teams_from_event(self):
@@ -54,7 +54,7 @@ class Robotevent:
             data = response.json()
             #extract team numbers
             teams += [team["number"] for team in data.get("data", [])]
-        print(f"[ROBOTEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}.")
+        print(f"[VEXEVENTS] [FROM {(self.event_name).upper()}] Teams Acquired from {self.event_id}.")
         #return the teams
         return teams
 

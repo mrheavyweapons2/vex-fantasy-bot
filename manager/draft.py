@@ -11,13 +11,13 @@ import time
 import os
 import random
 import sys
-from manager import robotevents_handler
+from manager import vexevents_handler
 
-#imports robotevents token from an encrypted .env file
+#imports vex events token from an encrypted .env file
 import os
 from dotenv import load_dotenv
 load_dotenv()  
-RB_TOKEN = os.getenv("ROBOTEVENTS_TOKEN")
+VEX_TOKEN = os.getenv("VEXEVENTS_TOKEN")
 
 #main class
 class Draft:
@@ -51,8 +51,8 @@ class Draft:
         self.total_participants = 0 #the total number of participants in the draft
         #generate a random seed or set it
         self.seed = seed
-        #creates the robotevents object
-        new_api = robotevents_handler.Robotevent(self.draft_name,draft_sku, RB_TOKEN)
+        #creates the vex events object
+        new_api = vexevents_handler.VexEvents(self.draft_name,draft_sku, VEX_TOKEN)
         #generates the team data
         self.draft_teams = new_api.get_teams_from_event()
         self.teams = self.generate_team_data(self.draft_teams)

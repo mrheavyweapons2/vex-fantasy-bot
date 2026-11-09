@@ -393,7 +393,7 @@ async def create_draft(interaction: discord.Interaction,
     ):
     '''
     function that takes in various parameters and creates a draft instance,
-    primarily uses the robotevents API to gather team data from an event SKU
+    primarily uses the vex events API to gather team data from an event SKU
 
     :param draft_object: the name you want to assign to the draft
     :type draft_object: str
