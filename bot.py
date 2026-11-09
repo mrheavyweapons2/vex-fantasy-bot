@@ -404,9 +404,11 @@ async def create_draft(interaction: discord.Interaction,
     :param draft_limit: the limit for the draft (optional field, defaults to None)
     :type draft_limit: int
     '''
+    #defer the command
+    await interaction.response.defer()
     # permission check
     if not is_admin(interaction):
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        await interaction.followup.send("You do not have permission to use this command.", ephemeral=True)
         return
     #if the draft already exists, it will not create a duplicate
     if draft_object in drafts:
@@ -429,7 +431,7 @@ async def create_draft(interaction: discord.Interaction,
         f'Event SKU: {draft_sku}\n'
         f'Limit: {draft_limit}'
     )
-    await interaction.response.send_message(msg)
+    await interaction.followup.send(msg)
     #save the draft as is
     new_draft.save_draft()
 
